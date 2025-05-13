@@ -68,6 +68,7 @@ export const icons = {
   star,
   target,
   to,
+  chat,
 };
 
 export const onboarding = [

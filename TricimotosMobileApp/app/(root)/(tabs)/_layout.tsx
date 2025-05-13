@@ -91,6 +91,26 @@ export default function Layout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="EsperandoResScreen"
+        options={{
+          title: "EsperandoResScreen",
+          headerShown: false,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon source={icons.map} focused={focused} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="RidesScreen"
+        options={{
+          title: "RidesScreen",
+          headerShown: false,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon source={icons.pin} focused={focused} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

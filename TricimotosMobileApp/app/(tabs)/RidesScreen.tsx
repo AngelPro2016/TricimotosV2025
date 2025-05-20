@@ -1,24 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 import { DateTimePickerModal } from 'react-native-modal-datetime-picker';
-import { useRouter } from 'expo-router'; // Importando useRouter de expo-router
+import { useRouter } from 'expo-router';
 
 const RidesScreen = () => {
-  const router = useRouter(); // Usamos useRouter de expo-router
+  const router = useRouter();
   const [origin, setOrigin] = useState('');
   const [numPeople, setNumPeople] = useState('');
-  const [time, setTime] = useState('');
+  const [time, setTime] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
-  const [location, setLocation] = useState(null);
+  const [location, setLocation] = useState<any>(null);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
 
-  // Get current location using Expo Location
   const getLocation = async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert("Permission Denied", "We need location permissions to continue.");
+      Alert.alert('Permiso denegado', 'Se necesita acceso a la ubicación.');
       return;
     }
     let currentLocation = await Location.getCurrentPositionAsync({});
@@ -26,38 +25,31 @@ const RidesScreen = () => {
     setOrigin(`${currentLocation.coords.latitude}, ${currentLocation.coords.longitude}`);
   };
 
-  // Show DateTime Picker
-  const showDatePicker = () => {
-    setDatePickerVisibility(true);
-  };
-
-  // Handle date change
+  const showDatePicker = () => setDatePickerVisibility(true);
   const handleConfirm = (date: Date) => {
     setTime(date);
     setDatePickerVisibility(false);
   };
 
-  // Handle ride request
   const handleRequestRide = () => {
     if (!origin || !numPeople || !time) {
-      Alert.alert('Error', 'Please fill in all the fields.');
+      Alert.alert('Error', 'Por favor completa todos los campos.');
       return;
     }
 
-    // Check if selected time is at least 10 minutes later
-    const currentTime = new Date();
+    const now = new Date();
     const selectedTime = new Date(time);
-    if (selectedTime <= currentTime || selectedTime.getHours() > 21) {
-      Alert.alert('Error', 'Please select a time that is at least 10 minutes later and before 9 PM.');
+    const diffInMinutes = (selectedTime.getTime() - now.getTime()) / 60000;
+
+    if (diffInMinutes < 10 || selectedTime.getHours() >= 21) {
+      Alert.alert('Error', 'Elige una hora al menos 10 minutos después y antes de las 9 PM.');
       return;
     }
 
     setLoading(true);
-    // Handle backend request here
     setTimeout(() => {
       setLoading(false);
-      Alert.alert('Success', 'Your ride has been successfully scheduled!');
-      router.push('/home'); // Navegamos a la pantalla "Home" usando expo-router
+      router.push('/(client)/EsperandoResScreen'); // 👈 Ruta corregida
     }, 2000);
   };
 
@@ -81,63 +73,47 @@ const RidesScreen = () => {
         onChangeText={setNumPeople}
       />
 
-      {/* DateTime Picker for selecting time */}
       <TouchableOpacity style={styles.input} onPress={showDatePicker}>
-        <Text style={styles.placeholderText}>{time ? time.toLocaleString() : 'Hora de Solicitud'}</Text>
+        <Text style={styles.placeholderText}>
+          {time ? time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Seleccionar hora'}
+        </Text>
       </TouchableOpacity>
 
-      {/* DateTime Picker Modal */}
       <DateTimePickerModal
         isVisible={isDatePickerVisible}
         mode="time"
         date={time || new Date()}
         onConfirm={handleConfirm}
         onCancel={() => setDatePickerVisibility(false)}
-        minimumDate={new Date(new Date().getTime() + 10 * 60000)} // Min 10 minutes from now
-        maximumDate={new Date(new Date().setHours(21, 0, 0, 0))} // Max till 9 PM today
+        minimumDate={new Date(new Date().getTime() + 10 * 60000)}
+        maximumDate={new Date(new Date().setHours(21, 0, 0, 0))}
       />
 
-      {/* Display Map with the current location */}
       {location && (
         <MapView
           style={styles.map}
           region={{
             latitude: location.latitude,
             longitude: location.longitude,
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
           }}
         >
           <Marker coordinate={{ latitude: location.latitude, longitude: location.longitude }} />
         </MapView>
       )}
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleRequestRide}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>
-          {loading ? 'Solicitando...' : 'Solicitar Carrera'}
-        </Text>
+      <TouchableOpacity style={styles.button} onPress={handleRequestRide} disabled={loading}>
+        <Text style={styles.buttonText}>{loading ? 'Solicitando...' : 'Solicitar Carrera'}</Text>
+        {loading && <ActivityIndicator style={{ marginTop: 10 }} color="#fff" />}
       </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
+  container: { flex: 1, padding: 20, backgroundColor: '#fff', justifyContent: 'center' },
+  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
   input: {
     height: 45,
     borderColor: '#ccc',
@@ -145,11 +121,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingLeft: 10,
     borderRadius: 5,
+    justifyContent: 'center',
   },
-  placeholderText: {
-    color: '#aaa',
-    fontSize: 16,
-  },
+  placeholderText: { color: '#666', fontSize: 16 },
   button: {
     backgroundColor: '#FF5733',
     padding: 15,
@@ -157,11 +131,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginTop: 10,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   locationButton: {
     backgroundColor: '#4CAF50',
     padding: 10,
@@ -169,16 +139,8 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 20,
   },
-  locationButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  map: {
-    height: 200,
-    marginBottom: 20,
-    borderRadius: 10,
-  },
+  locationButtonText: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
+  map: { height: 200, marginBottom: 20, borderRadius: 10 },
 });
 
 export default RidesScreen;

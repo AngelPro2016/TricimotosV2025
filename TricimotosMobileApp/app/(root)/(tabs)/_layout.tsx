@@ -11,20 +11,30 @@ const TabIcon = ({
   focused: boolean;
 }) => (
   <View
-    className={`flex flex-row justify-center items-center rounded-full ${focused ? "bg-general-300" : ""}`}
+    className={`items-center justify-center ${focused ? "bg-white rounded-full p-[0px]" : ""}`}
+    style={{
+      elevation: focused ? 6 : 0,
+      shadowColor: focused ? "#000" : "transparent",
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+    }}
   >
     <View
-      className={`rounded-full w-12 h-12 items-center justify-center ${focused ? "bg-general-400" : ""}`}
+      className={`rounded-full items-center justify-center ${
+        focused ? "bg-green-500 w-14 h-14" : "w-10 h-10"
+      }`}
     >
       <Image
         source={source}
         tintColor="white"
         resizeMode="contain"
-        className="w-7 h-7"
+        className={focused ? "w-7 h-7" : "w-5 h-5"}
       />
     </View>
   </View>
 );
+
 
 export default function Layout() {
   return (
@@ -35,20 +45,23 @@ export default function Layout() {
         tabBarInactiveTintColor: "white",
         tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: "#333333",
-          borderRadius: 50,
-          paddingBottom: 0, // ios only
-          overflow: "hidden",
-          marginHorizontal: 20,
-          marginBottom: 20,
-          height: 78,
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 30,
-          alignItems: "center",
-          flexDirection: "row",
-          position: "absolute",
-        },
+  backgroundColor: "#2e2e2ecc",
+  borderRadius: 40,
+  paddingBottom: 10,
+  paddingTop: 10,
+  marginHorizontal: 20,
+  marginBottom: 20,
+  height: 63,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.3,
+  shadowRadius: 6,
+  elevation: 10,
+  position: "absolute",
+  borderWidth: 1,
+  borderColor: "#4caf50",
+},
+
       }}
     >
       <Tabs.Screen

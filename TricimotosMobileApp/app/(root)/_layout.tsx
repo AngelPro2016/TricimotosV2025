@@ -1,11 +1,15 @@
-import { Stack } from "expo-router";
+// 📄 app/_layout.tsx
 
-const Layout = () => {
+import { Stack } from 'expo-router'
+
+export default function RootLayout() {
   return (
     <Stack>
+      {/* Tabs visibles como siempre */}
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-    </Stack>
-  );
-};
 
-export default Layout;
+      {/* Pantalla que no debe salir en tabs, pero se puede acceder */}
+      <Stack.Screen name="EsperandoResScreen" options={{ headerShown: false }} />
+    </Stack>
+  )
+}

@@ -1,184 +1,220 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import * as Location from 'expo-location';
-import MapView, { Marker } from 'react-native-maps';
-import { DateTimePickerModal } from 'react-native-modal-datetime-picker';
-import { useRouter } from 'expo-router'; // Importando useRouter de expo-router
+import React, { useState, useEffect } from 'react'
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView
+} from 'react-native'
+import * as Location from 'expo-location'
+import MapView, { Marker } from 'react-native-maps'
+import { DateTimePickerModal } from 'react-native-modal-datetime-picker'
+import { useRouter } from 'expo-router'
 
 const RidesScreen = () => {
-  const router = useRouter(); // Usamos useRouter de expo-router
-  const [origin, setOrigin] = useState('');
-  const [numPeople, setNumPeople] = useState('');
-  const [time, setTime] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [location, setLocation] = useState(null);
-  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const router = useRouter()
+  const [numPeople, setNumPeople] = useState('')
+  const [time, setTime] = useState<Date | null>(new Date())
+  const [location, setLocation] = useState<any>(null)
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [address, setAddress] = useState<string | null>(null)
 
-  // Get current location using Expo Location
   const getLocation = async () => {
-    let { status } = await Location.requestForegroundPermissionsAsync();
+    const { status } = await Location.requestForegroundPermissionsAsync()
     if (status !== 'granted') {
-      Alert.alert("Permission Denied", "We need location permissions to continue.");
-      return;
+      Alert.alert('Permiso denegado', 'Se requiere acceso a la ubicación.')
+      return
     }
-    let currentLocation = await Location.getCurrentPositionAsync({});
-    setLocation(currentLocation.coords);
-    setOrigin(`${currentLocation.coords.latitude}, ${currentLocation.coords.longitude}`);
-  };
+    const currentLocation = await Location.getCurrentPositionAsync({})
+    setLocation(currentLocation.coords)
 
-  // Show DateTime Picker
+    const [placemark] = await Location.reverseGeocodeAsync(currentLocation.coords)
+    if (placemark) {
+      const { street, city, region } = placemark
+      setAddress(`${street}, ${city}, ${region}`)
+    }
+  }
+
   const showDatePicker = () => {
-    setDatePickerVisibility(true);
-  };
+    setDatePickerVisibility(true)
+  }
 
-  // Handle date change
   const handleConfirm = (date: Date) => {
-    setTime(date);
-    setDatePickerVisibility(false);
-  };
+    setTime(date)
+    setDatePickerVisibility(false)
+  }
 
-  // Handle ride request
   const handleRequestRide = () => {
-    if (!origin || !numPeople || !time) {
-      Alert.alert('Error', 'Please fill in all the fields.');
-      return;
+    if (!location || !numPeople || !time) {
+      Alert.alert('Faltan datos', 'Completa todos los campos para continuar.')
+      return
     }
 
-    // Check if selected time is at least 10 minutes later
-    const currentTime = new Date();
-    const selectedTime = new Date(time);
-    if (selectedTime <= currentTime || selectedTime.getHours() > 21) {
-      Alert.alert('Error', 'Please select a time that is at least 10 minutes later and before 9 PM.');
-      return;
+    const now = new Date()
+    const minValidTime = new Date(now.getTime() + 10 * 60000)
+
+    if (time < minValidTime) {
+      Alert.alert('Hora inválida', 'La hora debe ser al menos 10 minutos en el futuro.')
+      return
     }
 
-    setLoading(true);
-    // Handle backend request here
+    setLoading(true)
+
     setTimeout(() => {
-      setLoading(false);
-      Alert.alert('Success', 'Your ride has been successfully scheduled!');
-      router.push('/home'); // Navegamos a la pantalla "Home" usando expo-router
-    }, 2000);
-  };
+      setLoading(false)
+      router.push('/EsperandoResScreen')
+    }, 2000)
+  }
 
   useEffect(() => {
-    getLocation();
-  }, []);
+    getLocation()
+  }, [])
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Solicitar Carrera</Text>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <View style={styles.container}>
+          <Text style={styles.title}>Solicitar Carrera</Text>
 
-      <TouchableOpacity style={styles.locationButton} onPress={getLocation}>
-        <Text style={styles.locationButtonText}>Obtener Ubicación Actual</Text>
-      </TouchableOpacity>
+          {address && (
+            <>
+              <Text style={styles.addressText}>📍 Dirección: {address}</Text>
+              <Text style={styles.coordsText}>
+                Coordenadas: {location?.latitude.toFixed(5)}, {location?.longitude.toFixed(5)}
+              </Text>
+            </>
+          )}
 
-      <TextInput
-        style={styles.input}
-        placeholder="Número de Personas"
-        keyboardType="numeric"
-        value={numPeople}
-        onChangeText={setNumPeople}
-      />
+          <TouchableOpacity style={styles.locationButton} onPress={getLocation}>
+            <Text style={styles.locationButtonText}>📍 Obtener Ubicación Actual</Text>
+          </TouchableOpacity>
 
-      {/* DateTime Picker for selecting time */}
-      <TouchableOpacity style={styles.input} onPress={showDatePicker}>
-        <Text style={styles.placeholderText}>{time ? time.toLocaleString() : 'Hora de Solicitud'}</Text>
-      </TouchableOpacity>
+          <TextInput
+            style={styles.input}
+            placeholder="Número de personas"
+            keyboardType="numeric"
+            value={numPeople}
+            onChangeText={setNumPeople}
+          />
 
-      {/* DateTime Picker Modal */}
-      <DateTimePickerModal
-        isVisible={isDatePickerVisible}
-        mode="time"
-        date={time || new Date()}
-        onConfirm={handleConfirm}
-        onCancel={() => setDatePickerVisibility(false)}
-        minimumDate={new Date(new Date().getTime() + 10 * 60000)} // Min 10 minutes from now
-        maximumDate={new Date(new Date().setHours(21, 0, 0, 0))} // Max till 9 PM today
-      />
+          <TouchableOpacity style={styles.input} onPress={showDatePicker}>
+            <Text style={styles.placeholderText}>
+              {time ? `${time.toLocaleDateString()} ${time.toLocaleTimeString()}` : 'Seleccionar hora de salida'}
+            </Text>
+          </TouchableOpacity>
 
-      {/* Display Map with the current location */}
-      {location && (
-        <MapView
-          style={styles.map}
-          region={{
-            latitude: location.latitude,
-            longitude: location.longitude,
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421,
-          }}
-        >
-          <Marker coordinate={{ latitude: location.latitude, longitude: location.longitude }} />
-        </MapView>
-      )}
+          <DateTimePickerModal
+            isVisible={isDatePickerVisible}
+            mode="time"
+            date={time || new Date()}
+            onConfirm={handleConfirm}
+            onCancel={() => setDatePickerVisibility(false)}
+          />
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleRequestRide}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>
-          {loading ? 'Solicitando...' : 'Solicitar Carrera'}
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
-};
+          {location && (
+            <MapView
+              style={styles.map}
+              region={{
+                latitude: location.latitude,
+                longitude: location.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+            >
+              <Marker coordinate={{ latitude: location.latitude, longitude: location.longitude }} />
+            </MapView>
+          )}
+
+          <TouchableOpacity
+            style={[styles.button, loading && { backgroundColor: '#aaa' }]}
+            onPress={handleRequestRide}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>
+              {loading ? 'Solicitando...' : 'Solicitar Carrera'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  )
+}
 
 const styles = StyleSheet.create({
+  scroll: {
+    paddingBottom: 30,
+  },
   container: {
-    flex: 1,
+    flexGrow: 1,
     padding: 20,
     backgroundColor: '#fff',
-    justifyContent: 'center',
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 20,
+    marginVertical: 15,
+    color: '#333',
   },
   input: {
-    height: 45,
-    borderColor: '#ccc',
+    height: 50,
+    borderColor: '#ddd',
     borderWidth: 1,
-    marginBottom: 10,
-    paddingLeft: 10,
-    borderRadius: 5,
+    marginBottom: 15,
+    paddingLeft: 15,
+    borderRadius: 8,
+    justifyContent: 'center',
+    backgroundColor: '#f9f9f9',
   },
   placeholderText: {
-    color: '#aaa',
+    color: '#555',
     fontSize: 16,
   },
+  addressText: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 5,
+    textAlign: 'center',
+  },
+  coordsText: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
   button: {
-    backgroundColor: '#FF5733',
+    backgroundColor: '#FF5722',
     padding: 15,
     alignItems: 'center',
-    borderRadius: 5,
+    borderRadius: 8,
     marginTop: 10,
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
     fontWeight: 'bold',
+    fontSize: 16,
   },
   locationButton: {
-    backgroundColor: '#4CAF50',
-    padding: 10,
+    backgroundColor: '#219653',
+    padding: 12,
     alignItems: 'center',
-    borderRadius: 5,
-    marginBottom: 20,
+    borderRadius: 8,
+    marginBottom: 15,
   },
   locationButtonText: {
     color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   map: {
-    height: 200,
-    marginBottom: 20,
+    height: 220,
     borderRadius: 10,
+    marginBottom: 20,
   },
-});
+})
 
-export default RidesScreen;
+export default RidesScreen

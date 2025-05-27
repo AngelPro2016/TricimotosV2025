@@ -1,23 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
+// 📄 app/EsperandoResScreen.tsx
+
+import React, { useState, useEffect } from 'react'
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from 'react-native'
+import { useRouter } from 'expo-router'
 
 const EsperandoRespuestaScreen = () => {
-  const [isAvailable, setIsAvailable] = useState(true); // Para manejar si hay conductores disponibles
-  const [seconds, setSeconds] = useState(0); // Para contar el tiempo de espera
+  const [isAvailable, setIsAvailable] = useState(true)
+  const [seconds, setSeconds] = useState(0)
+  const router = useRouter()
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setSeconds(prev => prev + 1); // Incrementa el tiempo cada segundo
+      setSeconds(prev => prev + 1)
 
-      // Si pasan más de 30 segundos y no se encuentra conductor, mostrar mensaje
-      if (seconds >= 30) {
-        clearInterval(timer);
-        setIsAvailable(false); // Simula que no hay conductores disponibles
+      if (seconds >= 10) {
+        clearInterval(timer)
+        setIsAvailable(false) // Simula que no hay conductores disponibles
       }
-    }, 1000);
+    }, 1000)
 
-    return () => clearInterval(timer); // Limpiar el temporizador al salir
-  }, [seconds]);
+    return () => clearInterval(timer)
+  }, [seconds])
 
   return (
     <View style={styles.container}>
@@ -31,18 +34,24 @@ const EsperandoRespuestaScreen = () => {
         ) : (
           <>
             <Text style={styles.errorText}>No hay conductores disponibles.</Text>
-            <TouchableOpacity style={styles.button} onPress={() => Alert.alert('Volver a intentar')}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => {
+                Alert.alert('Intentar de nuevo')
+                router.replace('/EsperandoResScreen') // Reinicia búsqueda
+              }}
+            >
               <Text style={styles.buttonText}>Intentar de nuevo</Text>
             </TouchableOpacity>
           </>
         )}
       </View>
-      <TouchableOpacity style={styles.skipButton} onPress={() => Alert.alert('Omitir acción')}>
+      <TouchableOpacity style={styles.skipButton} onPress={() => router.replace('../(tabs)/home')}>
         <Text style={styles.skipButtonText}>Omitir</Text>
       </TouchableOpacity>
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -75,6 +84,7 @@ const styles = StyleSheet.create({
     color: 'red',
     fontWeight: 'bold',
     marginTop: 20,
+    textAlign: 'center',
   },
   button: {
     backgroundColor: '#007bff',
@@ -95,6 +105,6 @@ const styles = StyleSheet.create({
     color: '#8d8d8d',
     fontSize: 16,
   },
-});
+})
 
-export default EsperandoRespuestaScreen;
+export default EsperandoRespuestaScreen

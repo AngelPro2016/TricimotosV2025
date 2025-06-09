@@ -1,13 +1,35 @@
 import React from "react";
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+} from "react-native";
 import * as Animatable from "react-native-animatable";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { useAuth } from "@clerk/clerk-expo";
+import { useRouter } from "expo-router";
 
 const { width } = Dimensions.get("window");
 
 const Home = () => {
+  const { signOut } = useAuth();
+  const router = useRouter();
+
+  const handleSignOut = () => {
+    signOut();
+    router.replace("/(auth)/sign-in");
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      {/* Botón cerrar sesión */}
+      <TouchableOpacity onPress={handleSignOut} style={styles.logoutButton}>
+        <Icon name="logout" size={28} color="#2e7d32" />
+      </TouchableOpacity>
+
       {/* Figuras decorativas */}
       <View style={styles.decorativeLine1} />
       <View style={styles.decorativeLine2} />
@@ -22,30 +44,34 @@ const Home = () => {
       />
 
       <Animatable.View
-  animation="pulse"
-  iterationCount="infinite"
-  duration={3000}
-  easing="ease-in-out"
-  style={styles.titleContainer}
->
-  <Text style={styles.titleText}>COMTRILAMANA</Text>
-</Animatable.View>
-
+        animation="pulse"
+        iterationCount="infinite"
+        duration={3000}
+        easing="ease-in-out"
+        style={styles.titleContainer}
+      >
+        <Text style={styles.titleText}>COMTRILAMANA</Text>
+      </Animatable.View>
 
       {/* Cuadro: Descripción */}
       <Animatable.View animation="fadeInUp" delay={400} style={styles.textBox}>
         <Text style={styles.description}>
-          Nuestra app te conecta con tricimotos seguras, rápidas y económicas para moverte por la ciudad sin complicaciones.
+          Nuestra app te conecta con tricimotos seguras, rápidas y económicas
+          para moverte por la ciudad sin complicaciones.
         </Text>
       </Animatable.View>
 
       {/* Cuadro: Funcionalidades */}
       <Animatable.View animation="zoomIn" delay={700} style={styles.textBox}>
-        <Text style={styles.featureTitle}>¿Qué puedes hacer con COMTRILAMANA?</Text>
+        <Text style={styles.featureTitle}>
+          ¿Qué puedes hacer con COMTRILAMANA?
+        </Text>
 
         <View style={styles.featureItem}>
           <Icon name="motorbike" size={24} color="#2e7d32" />
-          <Text style={styles.featureText}>Solicitar una tricimoto en tiempo real.</Text>
+          <Text style={styles.featureText}>
+            Solicitar una tricimoto en tiempo real.
+          </Text>
         </View>
         <View style={styles.featureItem}>
           <Icon name="map-marker-path" size={24} color="#2e7d32" />
@@ -88,6 +114,12 @@ const Home = () => {
 };
 
 const styles = StyleSheet.create({
+  logoutButton: {
+    position: "absolute",
+    top: 40,
+    right: 20,
+    zIndex: 10,
+  },
   container: {
     backgroundColor: "#e0ffe0",
     flexGrow: 1,
@@ -113,18 +145,29 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: "bold",
+  titleContainer: {
+    backgroundColor: "#ffffffee",
+    borderRadius: 15,
+    paddingVertical: 15,
+    paddingHorizontal: 25,
+    borderWidth: 2,
+    borderColor: "#2e7d32",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
+    marginBottom: 10,
+  },
+  titleText: {
+    fontSize: 28,
+    fontWeight: "900",
     color: "#2e7d32",
     textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 14,
-    fontStyle: "italic",
-    color: "#4caf50",
-    textAlign: "center",
-    marginTop: 5,
+    textShadowColor: "#a5d6a7",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+    letterSpacing: 2,
   },
   description: {
     fontSize: 15,
@@ -201,31 +244,6 @@ const styles = StyleSheet.create({
     transform: [{ rotate: "15deg" }],
     zIndex: 0,
   },
-  titleContainer: {
-  backgroundColor: "#ffffffee",
-  borderRadius: 15,
-  paddingVertical: 15,
-  paddingHorizontal: 25,
-  borderWidth: 2,
-  borderColor: "#2e7d32",
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 3 },
-  shadowOpacity: 0.3,
-  shadowRadius: 5,
-  elevation: 6,
-  marginBottom: 10,
-},
-titleText: {
-  fontSize: 28,
-  fontWeight: "900",
-  color: "#2e7d32",
-  textAlign: "center",
-  textShadowColor: "#a5d6a7",
-  textShadowOffset: { width: 1, height: 1 },
-  textShadowRadius: 3,
-  letterSpacing: 2,
-},
-
 });
 
 export default Home;

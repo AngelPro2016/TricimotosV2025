@@ -7,9 +7,8 @@ export default function RootLayout() {
     <Stack>
       {/* Tabs visibles como siempre */}
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-
-      {/* Pantalla que no debe salir en tabs, pero se puede acceder */}
-      <Stack.Screen name="EsperandoResScreen" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabstrici)" options={{ headerShown: false }} />
+      
     </Stack>
   )
 }

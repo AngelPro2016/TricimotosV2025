@@ -7,9 +7,11 @@ import CustomButton from "@/components/CustomButton";
 import InputField from "@/components/InputField";
 import OAuth from "@/components/OAuth";
 import { icons, images } from "@/constants";
+import ForgotPasswordModal from "@/components/ForgotPasswordModal";
 
 const SignIn = () => {
   const { signIn, setActive, isLoaded } = useSignIn();
+  const [showForgotModal, setShowForgotModal] = useState(false);
 
   const [form, setForm] = useState({
     email: "",
@@ -74,6 +76,18 @@ const SignIn = () => {
             onPress={onSignInPress}
             className="mt-6"
           />
+          <Text
+            onPress={() => setShowForgotModal(true)}
+            className="text-center text-primary-500 mt-3"
+          >
+            ¿Olvidaste tu contraseña?
+          </Text>
+
+          <ForgotPasswordModal
+            visible={showForgotModal}
+            onClose={() => setShowForgotModal(false)}
+          />
+
 
           <OAuth />
           <Link

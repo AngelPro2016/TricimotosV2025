@@ -1,11 +1,27 @@
-import { Text, View } from "react-native";
 import { Redirect } from "expo-router";
-import { useAuth } from "@clerk/clerk-expo";
-const Home = () => {
-    const { isSignedIn } = useAuth();
-    if (isSignedIn) return <Redirect href="/(tabs)/home" />;
+import { useUser } from "@clerk/clerk-expo";
+import { View, ActivityIndicator } from "react-native";
 
-  return <Redirect href="/(auth)/welcome" />;
+const Home = () => {
+  const { isLoaded, isSignedIn, user } = useUser();
+
+  if (!isLoaded) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (!isSignedIn) return <Redirect href="/(auth)/welcome" />;
+
+  const role = user?.publicMetadata?.role;
+
+  if (role === "tricimotero") {
+    return <Redirect href="/(tabstrici)/home" />;
+  } else {
+    return <Redirect href="/(tabs)/home" />;
+  }
 };
 
 export default Home;

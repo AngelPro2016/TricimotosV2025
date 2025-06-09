@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-*ss_7p^-_mw@^()b!32ggqcgk!%rdf=v5t89mlb=%u(2=dds(m
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['192.168.10.170']
 
 
 # Application definition
@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'TricimotosAgenda',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -71,13 +72,23 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'TricimotosBackend.wsgi.application'
 
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "TricimotosAgenda.authentication.ClerkAuthentication", 
+    ]
+}
+
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': dj_database_url.parse(config('DATABASE_URL'))
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / "db.sqlite3",
+    }
 }
+
 
 
 # Password validation

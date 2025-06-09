@@ -5,16 +5,13 @@ import { Alert, Image, ScrollView, Text, View } from "react-native";
 
 import CustomButton from "@/components/CustomButton";
 import InputField from "@/components/InputField";
-import OAuth from "@/components/OAuth";
 import { icons, images } from "@/constants";
-import ForgotPasswordModal from "@/components/ForgotPasswordModal";
 
-const SignIn = () => {
+const SignInTrici = () => {
   const { signIn, setActive, isLoaded } = useSignIn();
-  const [showForgotModal, setShowForgotModal] = useState(false);
 
   const [form, setForm] = useState({
-    email: "",
+    username: "",
     password: "",
   });
 
@@ -23,21 +20,20 @@ const SignIn = () => {
 
     try {
       const signInAttempt = await signIn.create({
-        identifier: form.email,
+        identifier: form.username, // ← username como identificador
         password: form.password,
       });
 
       if (signInAttempt.status === "complete") {
         await setActive({ session: signInAttempt.createdSessionId });
-        router.replace("/(root)/(tabs)/home");
+        router.replace("/(root)/(tabstrici)/home");
       } else {
-        // See https://clerk.com/docs/custom-flows/error-handling for more info on error handling
         console.log(JSON.stringify(signInAttempt, null, 2));
-        Alert.alert("Error", "Log in failed. Please try again.");
+        Alert.alert("Error", "Inicio de sesión fallido.");
       }
     } catch (err: any) {
       console.log(JSON.stringify(err, null, 2));
-      Alert.alert("Error", err.errors[0].longMessage);
+      Alert.alert("Error", err.errors[0]?.longMessage || "Ocurrió un error.");
     }
   }, [isLoaded, form]);
 
@@ -47,23 +43,23 @@ const SignIn = () => {
         <View className="relative w-full h-[250px]">
           <Image source={images.signUpCar} className="z-0 w-full h-[250px]" />
           <Text className="text-2xl text-black font-JakartaSemiBold absolute bottom-5 left-5">
-            Bienvenido 👋
+            Bienvenido Tricimotero 👋
           </Text>
         </View>
 
         <View className="p-5">
           <InputField
-            label="Correo"
-            placeholder="Ingresa tu correo electronico"
-            icon={icons.email}
-            textContentType="emailAddress"
-            value={form.email}
-            onChangeText={(value) => setForm({ ...form, email: value })}
+            label="Usuario"
+            placeholder="Ingresa tu nombre de usuario"
+            icon={icons.profile}
+            textContentType="username"
+            value={form.username}
+            onChangeText={(value) => setForm({ ...form, username: value })}
           />
 
           <InputField
-            label="Contrasena"
-            placeholder="Ingresa tu contrasena"
+            label="Contraseña"
+            placeholder="Ingresa tu contraseña"
             icon={icons.lock}
             secureTextEntry={true}
             textContentType="password"
@@ -72,38 +68,17 @@ const SignIn = () => {
           />
 
           <CustomButton
-            title="Iniciar Sesion"
+            title="Iniciar Sesión"
             onPress={onSignInPress}
             className="mt-6"
           />
-          <Text
-            onPress={() => setShowForgotModal(true)}
-            className="text-center text-primary-500 mt-3"
-          >
-            ¿Olvidaste tu contraseña?
-          </Text>
-
-          <ForgotPasswordModal
-            visible={showForgotModal}
-            onClose={() => setShowForgotModal(false)}
-          />
-
-
-          <OAuth />
-          <Link
-            href="/sign-in-trici"
-            className="text-lg text-center text-general-200 mt-5"
-          >
-            ¿Ya tienes una cuenta de tricimotero?{" "}
-            <Text className="text-primary-500">Iniciar sesion como tricimotero</Text>
-          </Link>
 
           <Link
-            href="/sign-up"
-            className="text-lg text-center text-general-200 mt-5"
+            href="/welcome"
+            className="text-lg text-center text-general-200 mt-10"
           >
-            ¿No tienes una cuenta?{" "}
-            <Text className="text-primary-500">Registrarse</Text>
+            ¿No tienes una cuenta como tricimotero?{" "}
+            <Text className="text-primary-500">Ir al inicio</Text>
           </Link>
         </View>
       </View>
@@ -111,4 +86,4 @@ const SignIn = () => {
   );
 };
 
-export default SignIn;
+export default SignInTrici;

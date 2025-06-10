@@ -12,6 +12,9 @@ import { DateTimePickerModal } from "react-native-modal-datetime-picker";
 import { useRouter } from "expo-router";
 import { View, Text, TouchableOpacity } from "react-native";
 import { useAuth } from "@clerk/clerk-expo";
+import * as Animatable from "react-native-animatable";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { useFocusEffect } from "@react-navigation/native";  // Importar useFocusEffect
 
 const RidesScreen = () => {
   const router = useRouter();
@@ -49,59 +52,72 @@ const RidesScreen = () => {
   };
 
   const handleRequestRide = async () => {
-  if (!location || !numPeople || !time || !address) {
-    Alert.alert("Faltan datos", "Completa todos los campos para continuar.");
-    return;
-  }
+    if (!location || !numPeople || !time || !address) {
+      Alert.alert("Faltan datos", "Completa todos los campos para continuar.");
+      return;
+    }
 
-  const now = new Date();
-  const minValidTime = new Date(now.getTime() + 10 * 60000);
-  if (time < minValidTime) {
-    Alert.alert("Hora inválida", "La hora debe ser al menos 10 minutos en el futuro.");
-    return;
-  }
+    const now = new Date();
+    const minValidTime = new Date(now.getTime() + 10 * 60000);
+    if (time < minValidTime) {
+      Alert.alert("Hora inválida", "La hora debe ser al menos 10 minutos en el futuro.");
+      return;
+    }
 
-  try {
-    setLoading(true);
-    const token = await getToken();
+    try {
+      setLoading(true);
+      const token = await getToken();
 
-    const payload = {
-      origen: address,
-      destino: "Destino pendiente",  // Puedes reemplazarlo por otro input en el futuro
-      hora_programada: time.toISOString(),
-    };
+      const payload = {
+        origen: address,
+        destino: "Destino pendiente",  // Puedes reemplazarlo por otro input en el futuro
+        hora_programada: time.toISOString(),
+      };
 
-    console.log("📦 Payload:", payload);
+      console.log("📦 Payload:", payload);
 
-    const res = await fetch("http://192.168.10.170:8000/api/solicitud/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
+      const res = await fetch("http://192.168.10.170:8000/api/solicitud/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
 
-    const data = await res.json();
-    console.log("✅ Respuesta backend:", data);
+      const data = await res.json();
+      console.log("✅ Respuesta backend:", data);
 
-    if (!res.ok) throw new Error(data?.detail || "Error al solicitar.");
+      if (!res.ok) throw new Error(data?.detail || "Error al solicitar.");
 
-    router.push({
-      pathname: "/EsperandoResScreen",
-      params: payload,  // reenvía origen, destino y hora
-    });
+      router.push({
+        pathname: "/EsperandoResScreen",
+        params: payload,  // reenvía origen, destino y hora
+      });
 
-  } catch (err: any) {
-    console.error("❌ Error al enviar solicitud:", err.message);
-    Alert.alert("Error", err.message);
-  } finally {
-    setLoading(false);
-  }
-};
+    } catch (err: any) {
+      console.error("❌ Error al enviar solicitud:", err.message);
+      Alert.alert("Error", err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     getLocation();
   }, []);
+
+  // Reiniciar las animaciones al enfocar la pantalla
+  useFocusEffect(
+    React.useCallback(() => {
+      // Aquí se reinician las animaciones
+      console.log("Pantalla enfocada, reiniciando animaciones...");
+      // Puedes realizar acciones adicionales para reiniciar el estado de las animaciones aquí
+      return () => {
+        console.log("Pantalla no está activa");
+      };
+    }, [])
+  );
 
   return (
     <KeyboardAvoidingView
@@ -112,50 +128,78 @@ const RidesScreen = () => {
         contentContainerStyle={{ paddingBottom: 30 }}
         className="bg-white px-5 py-11"
       >
-        <Text className="text-2xl font-bold text-center text-gray-800 mb-4">
+        {/* Fondo animado con figuras geométricas */}
+        <Animatable.View
+          animation="fadeInDownBig"
+          delay={200}
+          style={styles.backgroundFigure1}
+        />
+        <Animatable.View
+          animation="fadeInUpBig"
+          delay={400}
+          style={styles.backgroundFigure2}
+        />
+
+        {/* Título animado como el de COMTRILAMANA */}
+        <Animatable.Text
+          animation="bounceIn"
+          className="text-4xl font-extrabold text-center text-green-700 mb-6"
+          style={styles.title}
+        >
           Solicitar Carrera
-        </Text>
+        </Animatable.Text>
 
         {address && (
           <>
-            <Text className="text-center text-sm text-gray-700 mb-1">
-              📍 Dirección: {address}
-            </Text>
-            <Text className="text-center text-xs text-gray-600 mb-4">
-              Coordenadas: {location?.latitude.toFixed(5)},{" "}
-              {location?.longitude.toFixed(5)}
-            </Text>
+            <Animatable.View animation="fadeInUp" delay={500} style={styles.container}>
+              <Text className="text-center text-lg text-gray-700 mb-2">
+                📍 Dirección: {address}
+              </Text>
+              <Text className="text-center text-sm text-gray-500 mb-6">
+                Coordenadas: {location?.latitude.toFixed(5)}, {location?.longitude.toFixed(5)}
+              </Text>
+            </Animatable.View>
           </>
         )}
 
-        <TouchableOpacity
-          onPress={getLocation}
-          className="bg-green-600 py-3 rounded-lg mb-4 items-center"
-        >
-          <Text className="text-white font-semibold">
-            📍 Obtener Ubicación Actual
-          </Text>
-        </TouchableOpacity>
+        {/* Botón para obtener ubicación */}
+        <Animatable.View animation="zoomIn" delay={600}>
+          <TouchableOpacity
+            onPress={getLocation}
+            className="bg-green-600 py-3 rounded-lg mb-6 items-center"
+          >
+            <Text className="text-white font-semibold">
+              <Icon name="map-marker" size={24} color="white" /> Obtener Ubicación Actual
+            </Text>
+          </TouchableOpacity>
+        </Animatable.View>
 
-        <TextInput
-          className="h-12 border border-gray-300 bg-gray-50 px-4 rounded-lg mb-4"
-          placeholder="Número de personas"
-          keyboardType="numeric"
-          value={numPeople}
-          onChangeText={setNumPeople}
-        />
+        {/* Input de número de personas */}
+        <Animatable.View animation="fadeIn" delay={700}>
+          <TextInput
+            className="h-14 border border-gray-300 bg-gray-50 px-5 rounded-lg mb-6 text-lg"
+            placeholder="Número de personas"
+            keyboardType="numeric"
+            value={numPeople}
+            onChangeText={setNumPeople}
+          />
+        </Animatable.View>
 
-        <TouchableOpacity
-          onPress={showDatePicker}
-          className="h-12 border border-gray-300 bg-gray-50 px-4 rounded-lg justify-center mb-4"
-        >
-          <Text className="text-gray-700">
-            {time
-              ? `${time.toLocaleDateString()} ${time.toLocaleTimeString()}`
-              : "Seleccionar hora de salida"}
-          </Text>
-        </TouchableOpacity>
+        {/* Seleccionar hora */}
+        <Animatable.View animation="fadeIn" delay={800}>
+          <TouchableOpacity
+            onPress={showDatePicker}
+            className="h-14 border border-gray-300 bg-gray-50 px-5 rounded-lg justify-center mb-6"
+          >
+            <Text className="text-gray-700 text-lg">
+              {time
+                ? `${time.toLocaleDateString()} ${time.toLocaleTimeString()}`
+                : "Seleccionar hora de salida"}
+            </Text>
+          </TouchableOpacity>
+        </Animatable.View>
 
+        {/* DateTime Picker */}
         <DateTimePickerModal
           isVisible={isDatePickerVisible}
           mode="time"
@@ -164,39 +208,87 @@ const RidesScreen = () => {
           onCancel={() => setDatePickerVisibility(false)}
         />
 
+        {/* Mapa de ubicación */}
         {location && (
-          <MapView
-            style={{ height: 220, borderRadius: 10, marginBottom: 20 }}
-            region={{
-              latitude: location.latitude,
-              longitude: location.longitude,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-          >
-            <Marker
-              coordinate={{
+          <Animatable.View animation="fadeIn" delay={900}>
+            <MapView
+              style={{ height: 240, borderRadius: 15, marginBottom: 20 }}
+              region={{
                 latitude: location.latitude,
                 longitude: location.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
               }}
-            />
-          </MapView>
+            >
+              <Marker
+                coordinate={{
+                  latitude: location.latitude,
+                  longitude: location.longitude,
+                }}
+              />
+            </MapView>
+          </Animatable.View>
         )}
 
-        <TouchableOpacity
-          onPress={handleRequestRide}
-          disabled={loading}
-          className={`py-4 rounded-lg items-center ${
-            loading ? "bg-gray-400" : "bg-orange-600"
-          }`}
-        >
-          <Text className="text-white font-bold text-base">
-            {loading ? "Solicitando..." : "Solicitar Carrera"}
-          </Text>
-        </TouchableOpacity>
+        {/* Botón de solicitar carrera */}
+        <Animatable.View animation="bounceIn" delay={1000}>
+          <TouchableOpacity
+            onPress={handleRequestRide}
+            disabled={loading}
+            className={`py-5 rounded-lg items-center ${loading ? "bg-gray-400" : "bg-orange-600"}`}
+          >
+            <Text className="text-white font-bold text-xl">
+              {loading ? "Solicitando..." : "Solicitar Carrera"}
+            </Text>
+          </TouchableOpacity>
+        </Animatable.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
+};
+
+const styles = {
+  title: {
+    textShadowColor: "#a5d6a7",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+    letterSpacing: 3,
+    fontSize: 40,
+  },
+  container: {
+    marginBottom: 20,
+    paddingHorizontal: 10,
+    backgroundColor: "#ffffffcc",
+    borderRadius: 12,
+    paddingVertical: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  backgroundFigure1: {
+    position: "absolute",
+    top: 0,
+    left: -100,
+    width: 300,
+    height: 300,
+    backgroundColor: "#c8e6c9",
+    transform: [{ rotate: "-30deg" }],
+    opacity: 0.3,
+    zIndex: 0,
+  },
+  backgroundFigure2: {
+    position: "absolute",
+    bottom: 0,
+    right: -100,
+    width: 300,
+    height: 300,
+    backgroundColor: "#f0f4c3",
+    transform: [{ rotate: "15deg" }],
+    opacity: 0.3,
+    zIndex: 0,
+  },
 };
 
 export default RidesScreen;

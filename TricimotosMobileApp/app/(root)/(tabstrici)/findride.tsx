@@ -33,7 +33,7 @@ const SolicitudesTricimoteroScreen = () => {
   const fetchSolicitudes = async () => {
     try {
       const token = await getToken();
-      const res = await fetch("http://192.168.8.64:8000/api/solicitud/", {
+      const res = await fetch("http://192.168.8.64:8000/api/solicitudes/pendientes/", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();

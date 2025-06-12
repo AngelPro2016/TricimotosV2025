@@ -106,7 +106,7 @@ const Home = () => {
       {/* CTA */}
       <Animatable.View animation="pulse" iterationCount="infinite" delay={2000}>
         <TouchableOpacity style={styles.ctaButton}>
-          <Text style={styles.ctaText}>¡Empieza tu viaje ahora!</Text>
+          <Text style={styles.ctaText}></Text>
         </TouchableOpacity>
       </Animatable.View>
     </ScrollView>
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   textBox: {
-    backgroundColor: "#ffffffcc",
+    backgroundColor: "#f9f9f9",
     borderRadius: 12,
     padding: 15,
     marginVertical: 8,

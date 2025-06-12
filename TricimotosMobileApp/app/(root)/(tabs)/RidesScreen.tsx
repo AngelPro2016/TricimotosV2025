@@ -5,16 +5,20 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
+  Text,
+  View,
 } from "react-native";
 import * as Location from "expo-location";
 import MapView, { Marker } from "react-native-maps";
 import { DateTimePickerModal } from "react-native-modal-datetime-picker";
 import { useRouter } from "expo-router";
-import { View, Text, TouchableOpacity } from "react-native";
 import { useAuth } from "@clerk/clerk-expo";
-import * as Animatable from "react-native-animatable";
+import LottieView from "lottie-react-native";  // Para usar la animación de JSON
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { useFocusEffect } from "@react-navigation/native";  // Importar useFocusEffect
+
+// Llamar al archivo JSON de animación para el fondo
+import animationData from "../(tabs)/Animation - 1749685777879.json"; // Asegúrate de que esta ruta apunte al archivo correcto
 
 const RidesScreen = () => {
   const router = useRouter();
@@ -25,6 +29,7 @@ const RidesScreen = () => {
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [loading, setLoading] = useState(false);
   const [address, setAddress] = useState<string | null>(null);
+  const [mapType, setMapType] = useState("standard"); // Estado para controlar el tipo de mapa
 
   const getLocation = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -74,8 +79,6 @@ const RidesScreen = () => {
         hora_programada: time.toISOString(),
       };
 
-      console.log("📦 Payload:", payload);
-
       const res = await fetch("http://192.168.10.170:8000/api/solicitud/", {
         method: "POST",
         headers: {
@@ -86,8 +89,6 @@ const RidesScreen = () => {
       });
 
       const data = await res.json();
-      console.log("✅ Respuesta backend:", data);
-
       if (!res.ok) throw new Error(data?.detail || "Error al solicitar.");
 
       router.push({
@@ -96,7 +97,6 @@ const RidesScreen = () => {
       });
 
     } catch (err: any) {
-      console.error("❌ Error al enviar solicitud:", err.message);
       Alert.alert("Error", err.message);
     } finally {
       setLoading(false);
@@ -107,18 +107,6 @@ const RidesScreen = () => {
     getLocation();
   }, []);
 
-  // Reiniciar las animaciones al enfocar la pantalla
-  useFocusEffect(
-    React.useCallback(() => {
-      // Aquí se reinician las animaciones
-      console.log("Pantalla enfocada, reiniciando animaciones...");
-      // Puedes realizar acciones adicionales para reiniciar el estado de las animaciones aquí
-      return () => {
-        console.log("Pantalla no está activa");
-      };
-    }, [])
-  );
-
   return (
     <KeyboardAvoidingView
       className="flex-1"
@@ -126,78 +114,74 @@ const RidesScreen = () => {
     >
       <ScrollView
         contentContainerStyle={{ paddingBottom: 30 }}
-        className="bg-white px-5 py-11"
+        className="px-5 py-11"
+        style={{ backgroundColor: "#e0ffe0" }} // Fondo verde claro
       >
-        {/* Fondo animado con figuras geométricas */}
-        <Animatable.View
-          animation="fadeInDownBig"
-          delay={200}
-          style={styles.backgroundFigure1}
-        />
-        <Animatable.View
-          animation="fadeInUpBig"
-          delay={400}
-          style={styles.backgroundFigure2}
+        {/* Fondo animado de Lottie (JSON) */}
+        <LottieView
+          source={animationData} // Ruta de la animación
+          autoPlay
+          loop
+          style={{
+            position: "absolute",
+            width: "100%",
+            height: 400, // Ajustado para que cubra la parte superior de la pantalla
+            top: 100,
+            left: 0,
+            zIndex: -1, // Coloca la animación detrás del contenido
+          }}
         />
 
-        {/* Título animado como el de COMTRILAMANA */}
-        <Animatable.Text
-          animation="bounceIn"
-          className="text-4xl font-extrabold text-center text-green-700 mb-6"
+        {/* Título de la pantalla */}
+        <Text
+          className="text-4xl font-bold text-center text-green-700 mb-4"
           style={styles.title}
         >
           Solicitar Carrera
-        </Animatable.Text>
+        </Text>
 
+        {/* Dirección y coordenadas */}
         {address && (
-          <>
-            <Animatable.View animation="fadeInUp" delay={500} style={styles.container}>
-              <Text className="text-center text-lg text-gray-700 mb-2">
-                📍 Dirección: {address}
-              </Text>
-              <Text className="text-center text-sm text-gray-500 mb-6">
-                Coordenadas: {location?.latitude.toFixed(5)}, {location?.longitude.toFixed(5)}
-              </Text>
-            </Animatable.View>
-          </>
+          <View style={styles.container}>
+            <Text className="text-center text-lg text-black font-semibold mb-2">
+              <Icon name="map-marker" size={20} color="red" /> Dirección: {address}
+            </Text>
+            <Text className="text-center text-sm text-gray-700 mb-6">
+              Coordenadas: {location?.latitude.toFixed(5)}, {location?.longitude.toFixed(5)}
+            </Text>
+          </View>
         )}
 
-        {/* Botón para obtener ubicación */}
-        <Animatable.View animation="zoomIn" delay={600}>
-          <TouchableOpacity
-            onPress={getLocation}
-            className="bg-green-600 py-3 rounded-lg mb-6 items-center"
-          >
-            <Text className="text-white font-semibold">
-              <Icon name="map-marker" size={24} color="white" /> Obtener Ubicación Actual
-            </Text>
-          </TouchableOpacity>
-        </Animatable.View>
+        {/* Botón de obtener ubicación */}
+        <TouchableOpacity
+          onPress={getLocation}
+          className="bg-yellow-500 py-2 rounded-lg mb-4 items-center"
+        >
+          <Text className="text-white font-semibold">
+            <Icon name="map-marker" size={24} color="white" /> Obtener Ubicación Actual
+          </Text>
+        </TouchableOpacity>
 
         {/* Input de número de personas */}
-        <Animatable.View animation="fadeIn" delay={700}>
-          <TextInput
-            className="h-14 border border-gray-300 bg-gray-50 px-5 rounded-lg mb-6 text-lg"
-            placeholder="Número de personas"
-            keyboardType="numeric"
-            value={numPeople}
-            onChangeText={setNumPeople}
-          />
-        </Animatable.View>
+        <TextInput
+          className="h-12 border border-gray-300 bg-gray-50 px-4 rounded-lg mb-4 text-lg"
+          placeholder="Número de personas"
+          keyboardType="numeric"
+          value={numPeople}
+          onChangeText={setNumPeople}
+        />
 
         {/* Seleccionar hora */}
-        <Animatable.View animation="fadeIn" delay={800}>
-          <TouchableOpacity
-            onPress={showDatePicker}
-            className="h-14 border border-gray-300 bg-gray-50 px-5 rounded-lg justify-center mb-6"
-          >
-            <Text className="text-gray-700 text-lg">
-              {time
-                ? `${time.toLocaleDateString()} ${time.toLocaleTimeString()}`
-                : "Seleccionar hora de salida"}
-            </Text>
-          </TouchableOpacity>
-        </Animatable.View>
+        <TouchableOpacity
+          onPress={showDatePicker}
+          className="h-12 border border-gray-300 bg-gray-50 px-4 rounded-lg justify-center mb-4"
+        >
+          <Text className="text-gray-700 text-lg">
+            {time
+              ? `${time.toLocaleDateString()} ${time.toLocaleTimeString()}`
+              : "Seleccionar hora de salida"}
+          </Text>
+        </TouchableOpacity>
 
         {/* DateTime Picker */}
         <DateTimePickerModal
@@ -208,40 +192,55 @@ const RidesScreen = () => {
           onCancel={() => setDatePickerVisibility(false)}
         />
 
-        {/* Mapa de ubicación */}
+        {/* Mapa de ubicación con tamaño ajustado y vista satelital o de calles */}
         {location && (
-          <Animatable.View animation="fadeIn" delay={900}>
-            <MapView
-              style={{ height: 240, borderRadius: 15, marginBottom: 20 }}
-              region={{
+          <MapView
+            style={{ height: 180, borderRadius: 12, marginBottom: 10 }} // Mapa más pequeño
+            region={{
+              latitude: location.latitude,
+              longitude: location.longitude,
+              latitudeDelta: 0.005,  // Ajusta el zoom para acercarse más
+              longitudeDelta: 0.005,
+            }}
+            zoomEnabled={true} // Habilita el zoom
+            scrollEnabled={true} // Habilita el desplazamiento
+            mapType={mapType} // Tipo de mapa (satellite o standard)
+          >
+            <Marker
+              coordinate={{
                 latitude: location.latitude,
                 longitude: location.longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
               }}
-            >
-              <Marker
-                coordinate={{
-                  latitude: location.latitude,
-                  longitude: location.longitude,
-                }}
-              />
-            </MapView>
-          </Animatable.View>
+            />
+          </MapView>
         )}
 
-        {/* Botón de solicitar carrera */}
-        <Animatable.View animation="bounceIn" delay={1000}>
+        {/* Botones para cambiar el tipo de mapa */}
+        <View className="flex-row justify-center space-x-4 mb-4">
           <TouchableOpacity
-            onPress={handleRequestRide}
-            disabled={loading}
-            className={`py-5 rounded-lg items-center ${loading ? "bg-gray-400" : "bg-orange-600"}`}
+            className="bg-green-600 py-2 px-6 rounded-lg"
+            onPress={() => setMapType("standard")}
           >
-            <Text className="text-white font-bold text-xl">
-              {loading ? "Solicitando..." : "Solicitar Carrera"}
-            </Text>
+            <Text className="text-white font-semibold">Calles</Text>
           </TouchableOpacity>
-        </Animatable.View>
+          <TouchableOpacity
+            className="bg-blue-600 py-2 px-6 rounded-lg"
+            onPress={() => setMapType("satellite")}
+          >
+            <Text className="text-white font-semibold">Satélite</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Botón de solicitar carrera */}
+        <TouchableOpacity
+          onPress={handleRequestRide}
+          disabled={loading}
+          className={`py-3 rounded-lg items-center ${loading ? "bg-gray-400" : "bg-green-600"}`}
+        >
+          <Text className="text-white font-bold text-xl">
+            {loading ? "Solicitando..." : "Solicitar Carrera"}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -253,41 +252,19 @@ const styles = {
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
     letterSpacing: 3,
-    fontSize: 40,
+    fontSize: 32,
   },
   container: {
-    marginBottom: 20,
+    marginBottom: 10,
     paddingHorizontal: 10,
-    backgroundColor: "#ffffffcc",
+    backgroundColor: "#f9f9f9", // Color de fondo más claro para la dirección
     borderRadius: 12,
     paddingVertical: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 4,
-  },
-  backgroundFigure1: {
-    position: "absolute",
-    top: 0,
-    left: -100,
-    width: 300,
-    height: 300,
-    backgroundColor: "#c8e6c9",
-    transform: [{ rotate: "-30deg" }],
-    opacity: 0.3,
-    zIndex: 0,
-  },
-  backgroundFigure2: {
-    position: "absolute",
-    bottom: 0,
-    right: -100,
-    width: 300,
-    height: 300,
-    backgroundColor: "#f0f4c3",
-    transform: [{ rotate: "15deg" }],
-    opacity: 0.3,
-    zIndex: 0,
   },
 };
 

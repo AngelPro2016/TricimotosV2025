@@ -1,17 +1,15 @@
-// 📄 EsperandoRespuestaScreen.tsx
-
 import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  ActivityIndicator,
   TouchableOpacity,
   Alert,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuth } from "@clerk/clerk-expo";
 import * as Location from "expo-location";
-
+import LottieView from "lottie-react-native";  // Para usar la animación de JSON
+import animationData from "./(root)/(tabs)/Animation - 1749683959154.json";  // Ruta de la animación JSON
 
 const EsperandoRespuestaScreen = () => {
   const { origen, destino, hora } = useLocalSearchParams();
@@ -21,51 +19,52 @@ const EsperandoRespuestaScreen = () => {
   const router = useRouter();
 
   // 📤 Enviar solicitud al backend cuando se carga
-useEffect(() => {
-  let interval: NodeJS.Timeout;
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
 
-  const enviarUbicacionPeriodica = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") return;
+    const enviarUbicacionPeriodica = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") return;
 
-      interval = setInterval(async () => {
-        const { coords } = await Location.getCurrentPositionAsync({});
-        const token = await getToken();
+        interval = setInterval(async () => {
+          const { coords } = await Location.getCurrentPositionAsync({});
+          const token = await getToken();
 
-        const res = await fetch("http://192.168.10.170:8000/api/ubicacion/", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            latitud: coords.latitude,
-            longitud: coords.longitude,
-          }),
-        });
+          const res = await fetch("http://192.168.10.170:8000/api/ubicacion/", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              latitud: coords.latitude,
+              longitud: coords.longitude,
+            }),
+          });
 
-        if (!res.ok) {
-          console.warn("No se pudo actualizar ubicación.");
-        } else {
-          console.log("📍 Ubicación enviada:", coords);
-        }
-      }, 5000); // cada 5 segundos
-    } catch (err) {
-      console.error("Error al obtener ubicación:", err);
-    }
-  };
+          if (!res.ok) {
+            console.warn("No se pudo actualizar ubicación.");
+          } else {
+            console.log("📍 Ubicación enviada:", coords);
+          }
+        }, 5000); // cada 5 segundos
+      } catch (err) {
+        console.error("Error al obtener ubicación:", err);
+      }
+    };
 
-  enviarUbicacionPeriodica();
+    enviarUbicacionPeriodica();
 
-  return () => clearInterval(interval); // limpieza
-}, []);
+    return () => clearInterval(interval); // limpieza
+  }, []);
+
   // ⏱️ Temporizador
   useEffect(() => {
     const timer = setInterval(() => {
       setSeconds((prev) => {
         const next = prev + 1;
-        if (next >= 10) {
+        if (next >= 300) {
           clearInterval(timer);
           setIsAvailable(false);
         }
@@ -77,11 +76,23 @@ useEffect(() => {
   }, []);
 
   return (
-    <View className="flex-1 bg-white justify-center items-center px-5">
+    <View
+      className="flex-1 justify-center items-center px-5"
+      style={{ backgroundColor: "#e0ffe0" }} // Fondo verde claro
+    >
+      <LottieView
+        source={animationData} // Ruta de la animación
+        autoPlay
+        loop
+        style={{
+          width: 250,
+          height: 250,
+          marginBottom: 20,
+        }}
+      />
       <View className="items-center mb-6">
         {isAvailable ? (
           <>
-            <ActivityIndicator size="large" color="#007bff" className="mb-4" />
             <Text className="text-xl font-bold text-gray-800 text-center">
               Buscando tricimoto disponible...
             </Text>
@@ -108,14 +119,20 @@ useEffect(() => {
           </>
         )}
       </View>
+
       <TouchableOpacity
         className="mt-4"
         onPress={() => router.replace("../(tabs)/home")}
       >
-        <Text className="text-gray-500 text-base">Omitir</Text>
+        <Text className="text-gray-500 text-base">OMITIR</Text>
       </TouchableOpacity>
     </View>
   );
+};
+
+// Opción para ocultar el encabezado (barra de nombre de la pantalla)
+EsperandoRespuestaScreen.options = {
+  headerShown: false, // Esto ocultará la barra de título
 };
 
 export default EsperandoRespuestaScreen;

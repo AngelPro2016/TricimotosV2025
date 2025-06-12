@@ -77,8 +77,8 @@ const Home = () => {
       </View>
 
       <Animatable.View animation="pulse" iterationCount="infinite" delay={2000}>
-        <TouchableOpacity style={styles.ctaButton} onPress={() => router.push("/solicitudes")}>
-          <Text style={styles.ctaText}>Ver solicitudes disponibles</Text>
+        <TouchableOpacity style={styles.ctaButton}>
+          <Text style={styles.ctaText}></Text>
         </TouchableOpacity>
       </Animatable.View>
     </ScrollView>

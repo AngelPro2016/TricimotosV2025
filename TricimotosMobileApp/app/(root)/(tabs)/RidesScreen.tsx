@@ -79,7 +79,7 @@ const RidesScreen = () => {
         hora_programada: time.toISOString(),
       };
 
-      const res = await fetch("http://192.168.10.170:8000/api/solicitud/", {
+      const res = await fetch("http://192.168.76.78:8000/api/solicitud/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

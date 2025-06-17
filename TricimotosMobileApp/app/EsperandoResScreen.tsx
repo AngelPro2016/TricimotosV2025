@@ -31,7 +31,7 @@ const EsperandoRespuestaScreen = () => {
           const { coords } = await Location.getCurrentPositionAsync({});
           const token = await getToken();
 
-          const res = await fetch("http://192.168.10.170:8000/api/ubicacion/", {
+          const res = await fetch("http://192.168.76.78:8000/api/ubicacion/", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -85,9 +85,10 @@ const EsperandoRespuestaScreen = () => {
         autoPlay
         loop
         style={{
+          top: -70,
           width: 250,
           height: 250,
-          marginBottom: 20,
+          marginBottom: -50,
         }}
       />
       <View className="items-center mb-6">

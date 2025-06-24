@@ -77,9 +77,6 @@ const Home = () => {
       </View>
 
       <Animatable.View animation="pulse" iterationCount="infinite" delay={2000}>
-        <TouchableOpacity style={styles.ctaButton}>
-          <Text style={styles.ctaText}></Text>
-        </TouchableOpacity>
       </Animatable.View>
     </ScrollView>
   );

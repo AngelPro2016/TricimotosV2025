@@ -13,7 +13,7 @@ import * as Location from "expo-location";
 import MapView, { Marker } from "react-native-maps";
 import { DateTimePickerModal } from "react-native-modal-datetime-picker";
 import { useRouter } from "expo-router";
-import { useAuth } from "@clerk/clerk-expo";
+import { useAuth,useUser } from "@clerk/clerk-expo";
 import LottieView from "lottie-react-native";  // Para usar la animación de JSON
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
@@ -22,7 +22,8 @@ import animationData from "../(tabs)/Animation - 1749685777879.json"; // Asegúr
 
 const RidesScreen = () => {
   const router = useRouter();
-  const { getToken } = useAuth();
+  const { getToken} = useAuth();
+  const { user } = useUser();
   const [numPeople, setNumPeople] = useState("");
   const [time, setTime] = useState<Date | null>(new Date());
   const [location, setLocation] = useState<any>(null);
@@ -32,32 +33,42 @@ const RidesScreen = () => {
   const [mapType, setMapType] = useState("standard"); // Estado para controlar el tipo de mapa
 
   const getLocation = async () => {
+    console.log("Solicitando permisos de ubicación...");
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
+      console.error("Permiso denegado para ubicación");
       Alert.alert("Permiso denegado", "Se requiere acceso a la ubicación.");
       return;
     }
+
+    console.log("Obteniendo ubicación...");
     const currentLocation = await Location.getCurrentPositionAsync({});
     setLocation(currentLocation.coords);
 
-    const [placemark] = await Location.reverseGeocodeAsync(
-      currentLocation.coords
-    );
+    console.log("Ubicación obtenida:", currentLocation.coords);
+
+    const [placemark] = await Location.reverseGeocodeAsync(currentLocation.coords);
     if (placemark) {
       const { street, city, region } = placemark;
       setAddress(`${street}, ${city}, ${region}`);
+      console.log("Dirección obtenida:", `${street}, ${city}, ${region}`);
     }
   };
 
-  const showDatePicker = () => setDatePickerVisibility(true);
+  const showDatePicker = () => {
+    console.log("Mostrando selector de fecha...");
+    setDatePickerVisibility(true);
+  };
 
   const handleConfirm = (date: Date) => {
+    console.log("Hora seleccionada:", date);
     setTime(date);
     setDatePickerVisibility(false);
   };
 
   const handleRequestRide = async () => {
     if (!location || !numPeople || !time || !address) {
+      console.log("Faltan datos: ", { location, numPeople, time, address });
       Alert.alert("Faltan datos", "Completa todos los campos para continuar.");
       return;
     }
@@ -65,6 +76,7 @@ const RidesScreen = () => {
     const now = new Date();
     const minValidTime = new Date(now.getTime() + 10 * 60000);
     if (time < minValidTime) {
+      console.log("Hora seleccionada es inválida:", time);
       Alert.alert("Hora inválida", "La hora debe ser al menos 10 minutos en el futuro.");
       return;
     }
@@ -72,14 +84,22 @@ const RidesScreen = () => {
     try {
       setLoading(true);
       const token = await getToken();
+      console.log("Token obtenido:", token);
+
+      // Obtener el user.id de Clerk
+      const userId = user?.id;
+      console.log("User ID de Clerk:", userId);
 
       const payload = {
         origen: address,
         destino: "Destino pendiente",  // Puedes reemplazarlo por otro input en el futuro
         hora_programada: time.toISOString(),
+        cliente_clerk_id: userId,  // Incluir el user.id de Clerk en el payload
       };
 
-      const res = await fetch("http://192.168.76.78:8000/api/solicitud/", {
+      console.log("📦 Payload:", payload);
+
+      const res = await fetch("http://192.168.50.1:8000/api/solicitud/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -89,21 +109,27 @@ const RidesScreen = () => {
       });
 
       const data = await res.json();
+      console.log("Respuesta del backend:", data);
+
       if (!res.ok) throw new Error(data?.detail || "Error al solicitar.");
 
+      console.log("Redirigiendo a la pantalla de espera...");
       router.push({
         pathname: "/EsperandoResScreen",
-        params: payload,  // reenvía origen, destino y hora
+        params: payload,  // Reenvía origen, destino, hora y user_id
       });
 
     } catch (err: any) {
+      console.error("Error al enviar solicitud:", err.message);
       Alert.alert("Error", err.message);
     } finally {
       setLoading(false);
+      console.log("Proceso de solicitud terminado.");
     }
   };
 
   useEffect(() => {
+    console.log("Componente montado, obteniendo ubicación...");
     getLocation();
   }, []);
 

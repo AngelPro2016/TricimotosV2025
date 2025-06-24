@@ -94,6 +94,16 @@ export default function Layout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="CarrerasAceptadasScreen"
+        options={{
+          title: "CarrerasAceptadasScreen",
+          headerShown: false,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon source={icons.list} focused={focused} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

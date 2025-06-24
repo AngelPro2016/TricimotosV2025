@@ -19,8 +19,8 @@ class Ride(models.Model):
     destination_address = models.CharField(max_length=255)
     origin_latitude = models.DecimalField(max_digits=9, decimal_places=6)
     origin_longitude = models.DecimalField(max_digits=9, decimal_places=6)
-    destination_latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    destination_longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    destination_latitude = models.DecimalField(null=True, blank=True,max_digits=9, decimal_places=6)
+    destination_longitude = models.DecimalField(null=True, blank=True,max_digits=9, decimal_places=6)
     ride_time = models.IntegerField()  # duración en minutos
     fare_price = models.DecimalField(max_digits=10, decimal_places=2)
     payment_status = models.CharField(max_length=20)

@@ -24,7 +24,6 @@ const SolicitudesTricimoteroScreen = () => {
   const navigation = useNavigation();
 
   useEffect(() => {
-
     return () => {
       navigation.setOptions?.({ tabBarStyle: undefined }); // Restaurar al salir
     };
@@ -33,7 +32,7 @@ const SolicitudesTricimoteroScreen = () => {
   const fetchSolicitudes = async () => {
     try {
       const token = await getToken();
-      const res = await fetch("http://192.168.10.170:8000/api/solicitudes/pendientes", {
+      const res = await fetch("http://192.168.50.1:8000/api/solicitudes/pendientes", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -49,7 +48,7 @@ const SolicitudesTricimoteroScreen = () => {
   const aceptarSolicitud = async (id: number) => {
     try {
       const token = await getToken();
-      const res = await fetch(`http://192.168.10.170:8000/api/solicitud/aceptar/${id}/`, {
+      const res = await fetch(`http://192.168.50.1:8000/api/solicitud/aceptar/${id}/`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -64,6 +63,11 @@ const SolicitudesTricimoteroScreen = () => {
 
   useEffect(() => {
     fetchSolicitudes();
+    const interval = setInterval(() => {
+    fetchSolicitudes();
+  }, 3000);
+
+  return () => clearInterval(interval);
   }, []);
 
   const renderItem = ({ item }: any) => (

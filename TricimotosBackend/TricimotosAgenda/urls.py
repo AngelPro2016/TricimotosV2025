@@ -8,6 +8,5 @@ urlpatterns = [
     path('api/solicitud/aceptar/<int:solicitud_id>/', views.aceptar_solicitud),
     path('api/ubicacion/', views.actualizar_ubicacion),
     path('api/solicitudes-con-ubicacion/', views.solicitudes_con_ubicacion),
-
-
+    path('api/carreras/aceptadas/', views.listar_carreras_aceptadas, name='listar_carreras_aceptadas'),
 ]

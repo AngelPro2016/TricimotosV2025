@@ -13,7 +13,12 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from decouple import config
 import dj_database_url
+import os
+from dotenv import load_dotenv
+import os
 
+# Cargar el archivo .env
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -27,7 +32,7 @@ SECRET_KEY = 'django-insecure-*ss_7p^-_mw@^()b!32ggqcgk!%rdf=v5t89mlb=%u(2=dds(m
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.10.170', '192.168.76.78']
+ALLOWED_HOSTS = ['192.168.10.170', '192.168.76.78','192.168.50.1']
 
 
 # Application definition
@@ -81,12 +86,8 @@ REST_FRAMEWORK = {
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / "db.sqlite3",
-    }
+    'default': dj_database_url.config(default='postgresql://anc_trici_owner:3L4gCXxVAOFo@ep-sparkling-credit-a5xpw7vd.us-east-2.aws.neon.tech/anc_trici?sslmode=require')
 }
 
 

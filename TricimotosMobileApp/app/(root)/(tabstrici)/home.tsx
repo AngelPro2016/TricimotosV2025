@@ -31,17 +31,17 @@ const Home = () => {
       />
 
       <Animatable.View animation="pulse" iterationCount="infinite" duration={3000} style={styles.titleContainer}>
-        <Text style={styles.titleText}>TRICIMOTERO ACTIVO</Text>
+        <Text style={styles.titleText}>TU SERVICIO DE TRICIMOTO ACTIVO</Text>
       </Animatable.View>
 
       <Animatable.View animation="fadeInUp" delay={400} style={styles.textBox}>
         <Text style={styles.description}>
-          Bienvenido a tu panel de conductor. Desde aquí puedes ver nuevas solicitudes, aceptar carreras, y ayudar a movilizar La Maná de forma segura y rápida.
+          Bienvenido a tu panel de conductor. Desde aquí puedes ver nuevas solicitudes, aceptar carreras y ayudar a movilizar La Maná de forma segura y rápida.
         </Text>
       </Animatable.View>
 
       <Animatable.View animation="zoomIn" delay={700} style={styles.textBox}>
-        <Text style={styles.featureTitle}>¿Qué puedes hacer como tricimotero?</Text>
+        <Text style={styles.featureTitle}>¿Qué puedes hacer tu como conductor?</Text>
 
         <View style={styles.featureItem}>
           <Icon name="account-clock-outline" size={24} color="#2e7d32" />
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     backgroundColor: "#ffffffee",
-    borderRadius: 15,
+    borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 25,
     borderWidth: 2,

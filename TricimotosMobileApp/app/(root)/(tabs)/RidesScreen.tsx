@@ -99,7 +99,7 @@ const RidesScreen = () => {
 
       console.log("📦 Payload:", payload);
 
-      const res = await fetch("http://192.168.50.1:8000/api/solicitud/", {
+      const res = await fetch("http://192.168.10.170:8000/api/solicitud/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

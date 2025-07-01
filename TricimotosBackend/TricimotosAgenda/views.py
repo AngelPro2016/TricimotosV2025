@@ -1,7 +1,7 @@
 from rest_framework.decorators import api_view, authentication_classes
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Solicitud, Aceptacion, Ubicacion,Ride
+from .models import Solicitud, Aceptacion, Ubicacion,Ride,UbicacionTricimotero
 from .serializers import SolicitudSerializer, SolicitudConUbicacionSerializer
 from .authentication import ClerkAuthentication
 from django.utils import timezone
@@ -97,6 +97,7 @@ def aceptar_solicitud(request, solicitud_id):
         "message": "Solicitud aceptada exitosamente y viaje agendado.",
         "solicitud_id": solicitud.id,
         "tricimotero_clerk_id": solicitud.tricimotero_clerk_id,
+        "cliente_clerk_id": solicitud.cliente_clerk_id,
         "ride_id": ride.id
     }, status=status.HTTP_200_OK)
     
@@ -156,3 +157,72 @@ def listar_carreras_aceptadas(request):
     
     # Retornamos la respuesta con los datos de las solicitudes aceptadas
     return Response(solicitudes_serializer.data)
+
+@api_view(['GET'])
+@authentication_classes([ClerkAuthentication])
+def ubicacion_conductor(request):
+    clerk_id = request.GET.get("id")
+    if not clerk_id:
+        return Response({"detail": "ID requerido"}, status=400)
+    
+    ubicacion = Ubicacion.objects.filter(clerk_user_id=clerk_id).first()
+    if not ubicacion:
+        return Response({"detail": "Ubicación no encontrada"}, status=404)
+
+    return Response({
+        "latitud": ubicacion.latitud,
+        "longitud": ubicacion.longitud,
+        "actualizado": ubicacion.actualizado,
+    })
+
+@api_view(['POST'])
+@authentication_classes([ClerkAuthentication])
+def actualizar_ubicacion_tricimotero(request):
+    clerk_user_id = request.user
+    data = request.data
+    lat = data.get("latitud")
+    lng = data.get("longitud")
+
+    if lat is None or lng is None:
+        return Response({"detail": "Coordenadas faltantes."}, status=400)
+
+    ubicacion, created = UbicacionTricimotero.objects.update_or_create(
+        clerk_user_id=clerk_user_id,
+        defaults={"latitud": lat, "longitud": lng}
+    )
+    return Response({"message": "Ubicación del tricimotero actualizada"})
+
+@api_view(['GET'])
+@authentication_classes([ClerkAuthentication])
+def ubicacion_tricimotero(request):
+    clerk_id = request.GET.get("id")
+    if not clerk_id:
+        return Response({"detail": "ID requerido"}, status=400)
+
+    from .models import UbicacionTricimotero
+    ubicacion = UbicacionTricimotero.objects.filter(clerk_user_id=clerk_id).first()
+    if not ubicacion:
+        return Response({"detail": "Ubicación no encontrada"}, status=404)
+
+    return Response({
+        "latitud": ubicacion.latitud,
+        "longitud": ubicacion.longitud,
+        "actualizado": ubicacion.actualizado,
+    })
+@api_view(['GET'])
+@authentication_classes([ClerkAuthentication])
+def ubicacion_cliente(request):
+    clerk_id = request.GET.get("id")
+    if not clerk_id:
+        return Response({"detail": "ID requerido"}, status=400)
+
+    ubicacion = Ubicacion.objects.filter(clerk_user_id=clerk_id).first()
+    if not ubicacion:
+        return Response({"detail": "Ubicación no encontrada"}, status=404)
+
+    return Response({
+        "latitud": ubicacion.latitud,
+        "longitud": ubicacion.longitud,
+        "actualizado": ubicacion.actualizado,
+    })
+

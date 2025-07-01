@@ -8,7 +8,7 @@ export default function RootLayout() {
       {/* Tabs visibles como siempre */}
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabstrici)" options={{ headerShown: false }} />
-      
+      <Stack.Screen name="ProcesoDeRecogidaTricimotero" options={{ headerShown: false }} />
     </Stack>
   )
 }

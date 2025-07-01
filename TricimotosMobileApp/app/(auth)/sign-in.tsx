@@ -95,7 +95,7 @@ const SignIn = () => {
             className="text-lg text-center text-general-200 mt-5"
           >
             ¿Ya tienes una cuenta de tricimotero?{" "}
-            <Text className="text-primary-500">Iniciar sesion como tricimotero</Text>
+            <Text className="text-primary-500">Iniciar sesion como conductor</Text>
           </Link>
            
           <Link

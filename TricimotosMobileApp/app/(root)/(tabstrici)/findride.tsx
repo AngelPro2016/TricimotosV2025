@@ -32,7 +32,7 @@ const SolicitudesTricimoteroScreen = () => {
   const fetchSolicitudes = async () => {
     try {
       const token = await getToken();
-      const res = await fetch("http://192.168.50.1:8000/api/solicitudes/pendientes", {
+      const res = await fetch("http://192.168.10.170:8000/api/solicitudes/pendientes", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -46,20 +46,31 @@ const SolicitudesTricimoteroScreen = () => {
   };
 
   const aceptarSolicitud = async (id: number) => {
-    try {
-      const token = await getToken();
-      const res = await fetch(`http://192.168.50.1:8000/api/solicitud/aceptar/${id}/`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.detail || "Error al aceptar solicitud");
-      Alert.alert("Solicitud aceptada", "Has aceptado la carrera correctamente.");
-      fetchSolicitudes();
-    } catch (err: any) {
-      Alert.alert("Error", err.message);
-    }
-  };
+  try {
+    const token = await getToken();
+    const res = await fetch(`http://192.168.10.170:8000/api/solicitud/aceptar/${id}/`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.detail || "Error al aceptar solicitud");
+
+    Alert.alert("Solicitud aceptada", "Has aceptado la carrera correctamente.");
+
+    // Ir a la pantalla de proceso de recogida del tricimotero
+    router.replace({
+      pathname: "/ProcesoDeRecogidaTricimotero",
+      params: {
+        solicitudId: data.solicitud_id,
+        rideId: data.ride_id,
+        clienteId: data.cliente_clerk_id,  // o `data.cliente_clerk_id` si lo devuelves
+      },
+    });
+  } catch (err: any) {
+    Alert.alert("Error", err.message);
+  }
+};
+
 
   useEffect(() => {
     fetchSolicitudes();

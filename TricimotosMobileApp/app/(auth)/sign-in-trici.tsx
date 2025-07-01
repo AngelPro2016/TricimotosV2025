@@ -41,7 +41,7 @@ const SignInTrici = () => {
         <View className="relative w-full h-[250px]">
           <Image source={images.signUpCar} className="z-0 w-full h-[250px]" />
           <Text className="text-2xl text-black font-JakartaSemiBold absolute bottom-5 left-5">
-            Bienvenido Tricimotero 👋
+            Bienvenido Conductor 👋
           </Text>
         </View>
 
@@ -68,7 +68,7 @@ const SignInTrici = () => {
           <CustomButton title="Iniciar Sesión" onPress={onSignInPress} className="mt-6" />
 
           <Link href="/welcome" className="text-lg text-center text-general-200 mt-10">
-            ¿No tienes una cuenta como tricimotero? <Text className="text-primary-500">Ir al inicio</Text>
+            ¿No tienes una cuenta como conductor? <Text className="text-primary-500">Contacta con nosotros</Text>
           </Link>
         </View>
       </View>

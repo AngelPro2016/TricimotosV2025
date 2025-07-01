@@ -31,7 +31,7 @@ const EsperandoRespuestaScreen = () => {
           const { coords } = await Location.getCurrentPositionAsync({});
           const token = await getToken();
 
-          const res = await fetch("http://192.168.50.1:8000/api/ubicacion/", {
+          const res = await fetch("http://192.168.10.170:8000/api/ubicacion/", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -74,6 +74,41 @@ const EsperandoRespuestaScreen = () => {
 
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+  const interval = setInterval(async () => {
+    try {
+      const token = await getToken();
+      const res = await fetch("http://192.168.10.170:8000/api/estado-solicitud/", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.estado === "aceptada") {
+          console.log("✅ Solicitud aceptada por:", data.asignado);
+          clearInterval(interval);  // Detener polling
+          router.replace({
+            pathname: "/ProcesoDeRecogida",
+            params: {
+              tricimotero: data.asignado,
+              origen,
+              destino,
+              hora,
+            },
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Error al verificar estado de la solicitud:", err);
+    }
+  }, 5000); // cada 5 segundos
+
+  return () => clearInterval(interval);
+}, []);
 
   return (
     <View

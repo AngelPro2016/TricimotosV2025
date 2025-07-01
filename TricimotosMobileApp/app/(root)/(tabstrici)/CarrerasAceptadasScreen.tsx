@@ -13,7 +13,7 @@ const CarrerasAceptadasScreen = () => {
     const fetchCarreras = async () => {
       try {
         const token = await getToken();
-        const response = await fetch('http://192.168.50.1:8000/api/carreras/aceptadas/', {
+        const response = await fetch('http://192.168.10.170:8000/api/carreras/aceptadas/', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!response.ok) {
@@ -30,14 +30,7 @@ const CarrerasAceptadasScreen = () => {
 
     fetchCarreras();
   }, []);
-   useEffect(() => {
-      fetchCarreras();
-      const interval = setInterval(() => {
-      fetchSolicitudes();
-    }, 3000);
   
-    return () => clearInterval(interval);
-    }, []);
 
   const renderItem = ({ item }: any) => (
     <View style={{ backgroundColor: 'white', padding: 10, marginBottom: 10, borderRadius: 8 }}>

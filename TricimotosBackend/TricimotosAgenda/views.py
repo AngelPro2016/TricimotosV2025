@@ -5,6 +5,7 @@ from .models import Solicitud, Aceptacion, Ubicacion,Ride,UbicacionTricimotero
 from .serializers import SolicitudSerializer, SolicitudConUbicacionSerializer
 from .authentication import ClerkAuthentication
 from django.utils import timezone
+from django.db import connection
 
 @api_view(['POST'])
 @authentication_classes([ClerkAuthentication])
@@ -15,7 +16,15 @@ def crear_solicitud(request):
     # Agregamos el ID de Clerk a los datos recibidos desde el frontend
     data = request.data.copy()
     data['cliente_clerk_id'] = clerk_user_id  # Asignamos el `clerk_user_id` al campo adecuado
-
+    
+    # Concatenar los nombres
+    first_name = request.data.get('cliente_first_name', '')
+    last_name = request.data.get('cliente_last_name', '')
+    cliente_full_name = f"{first_name} {last_name}"
+    
+    # Asignamos el nombre completo al campo cliente_full_name
+    data['cliente_full_name'] = cliente_full_name
+    
     # Ahora pasamos esos datos al serializer
     serializer = SolicitudSerializer(data=data)
     
@@ -48,6 +57,23 @@ def estado_solicitud(request):
 @authentication_classes([ClerkAuthentication])
 def listar_solicitudes_pendientes(request):
     solicitudes = Solicitud.objects.filter(estado='pendiente')
+     # Consultar el nombre del cliente desde la tabla `users` en Neon DB
+    def obtener_nombre_cliente(cliente_clerk_id):
+        with connection.cursor() as cursor:
+            try:
+                # Ejecuta la consulta SQL para obtener el nombre del cliente desde la tabla `users`
+                cursor.execute("SELECT name FROM users WHERE clerk_id = %s", [cliente_clerk_id])
+                result = cursor.fetchone()  # Solo obtenemos el primer resultado
+                return result[0] if result else "Desconocido"
+            except Exception as e:
+                print(f"Error al ejecutar la consulta: {str(e)}")
+                return "Error"
+
+    # Agregar el nombre del cliente a cada solicitud
+    for solicitud in solicitudes:
+        cliente_nombre = obtener_nombre_cliente(solicitud.cliente_clerk_id)
+        solicitud.cliente_nombre = cliente_nombre  # Añadir el nombre del cliente
+    
     serializer = SolicitudSerializer(solicitudes, many=True)
     return Response(serializer.data)
 

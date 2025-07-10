@@ -67,66 +67,72 @@ const RidesScreen = () => {
   };
 
   const handleRequestRide = async () => {
-    if (!location || !numPeople || !time || !address) {
-      console.log("Faltan datos: ", { location, numPeople, time, address });
-      Alert.alert("Faltan datos", "Completa todos los campos para continuar.");
-      return;
-    }
+  if (!location || !numPeople || !time || !address) {
+    console.log("Faltan datos: ", { location, numPeople, time, address });
+    Alert.alert("Faltan datos", "Completa todos los campos para continuar.");
+    return;
+  }
 
-    const now = new Date();
-    const minValidTime = new Date(now.getTime() + 10 * 60000);
-    if (time < minValidTime) {
-      console.log("Hora seleccionada es inválida:", time);
-      Alert.alert("Hora inválida", "La hora debe ser al menos 10 minutos en el futuro.");
-      return;
-    }
+  const now = new Date();
+  const minValidTime = new Date(now.getTime() + 10 * 60000);
+  if (time < minValidTime) {
+    console.log("Hora seleccionada es inválida:", time);
+    Alert.alert("Hora inválida", "La hora debe ser al menos 10 minutos en el futuro.");
+    return;
+  }
 
-    try {
-      setLoading(true);
-      const token = await getToken();
-      console.log("Token obtenido:", token);
+  try {
+    setLoading(true);
+    const token = await getToken();
+    console.log("Token obtenido:", token);
 
-      // Obtener el user.id de Clerk
-      const userId = user?.id;
-      console.log("User ID de Clerk:", userId);
+    // Obtener el user.id de Clerk y el nombre del cliente
+    const userId = user?.id;
+    const firstName = user?.firstName;
+    const lastName = user?.lastName;
+    console.log("User ID de Clerk:", userId);
+    console.log("Nombre del Cliente:", firstName, lastName);
 
-      const payload = {
-        origen: address,
-        destino: "Destino pendiente",  // Puedes reemplazarlo por otro input en el futuro
-        hora_programada: time.toISOString(),
-        cliente_clerk_id: userId,  // Incluir el user.id de Clerk en el payload
-      };
+    const payload = {
+      origen: address,
+      destino: "Destino pendiente",  // Puedes reemplazarlo por otro input en el futuro
+      hora_programada: time.toISOString(),
+      cliente_clerk_id: userId,  // Incluir el user.id de Clerk en el payload
+      cliente_first_name: firstName,  // Agregar el primer nombre
+      cliente_last_name: lastName,   // Agregar el apellido
+    };
 
-      console.log("📦 Payload:", payload);
+    console.log("📦 Payload:", payload);
 
-      const res = await fetch("http://192.168.10.170:8000/api/solicitud/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+    const res = await fetch("http://192.168.10.170:8000/api/solicitud/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
 
-      const data = await res.json();
-      console.log("Respuesta del backend:", data);
+    const data = await res.json();
+    console.log("Respuesta del backend:", data);
 
-      if (!res.ok) throw new Error(data?.detail || "Error al solicitar.");
+    if (!res.ok) throw new Error(data?.detail || "Error al solicitar.");
 
-      console.log("Redirigiendo a la pantalla de espera...");
-      router.push({
-        pathname: "/EsperandoResScreen",
-        params: payload,  // Reenvía origen, destino, hora y user_id
-      });
+    console.log("Redirigiendo a la pantalla de espera...");
+    router.push({
+      pathname: "/EsperandoResScreen",
+      params: payload,  // Reenvía origen, destino, hora y user_id
+    });
 
-    } catch (err: any) {
-      console.error("Error al enviar solicitud:", err.message);
-      Alert.alert("Error", err.message);
-    } finally {
-      setLoading(false);
-      console.log("Proceso de solicitud terminado.");
-    }
-  };
+  } catch (err: any) {
+    console.error("Error al enviar solicitud:", err.message);
+    Alert.alert("Error", err.message);
+  } finally {
+    setLoading(false);
+    console.log("Proceso de solicitud terminado.");
+  }
+};
+
 
   useEffect(() => {
     console.log("Componente montado, obteniendo ubicación...");

@@ -34,6 +34,7 @@ class Ride(models.Model):
 
 class Solicitud(models.Model):
     cliente_clerk_id = models.CharField(max_length=255)  # ID del cliente (Clerk)
+    cliente_full_name = models.CharField(max_length=511, null=True, blank=True)  # Nuevo campo para el nombre completo
     origen = models.CharField(max_length=255)
     destino = models.CharField(max_length=255)
     hora_programada = models.DateTimeField()
@@ -45,7 +46,8 @@ class Solicitud(models.Model):
     tricimotero_clerk_id = models.CharField(max_length=255, null=True, blank=True)  # opcional hasta que se asigne
 
     def __str__(self):
-        return f"Solicitud de {self.cliente_clerk_id} - Estado: {self.estado}"
+        return f"Solicitud de {self.cliente_clerk_id} ({self.cliente_full_name}) - Estado: {self.estado}"
+
 
 
 class Aceptacion(models.Model):

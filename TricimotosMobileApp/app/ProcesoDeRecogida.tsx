@@ -5,7 +5,8 @@ import { useLocalSearchParams } from "expo-router";
 import { useAuth } from "@clerk/clerk-expo";
 import * as Location from "expo-location";
 import Constants from "expo-constants";
-
+import { icons } from "@/constants";
+import { Image } from 'react-native';
 const GOOGLE_API_KEY = "AIzaSyCOOfG2mcr3kXZpMaUOk_IKOnRViF6mNaw";
 
 const ProcesoDeRecogida = () => {
@@ -175,8 +176,26 @@ const ProcesoDeRecogida = () => {
                         longitudeDelta: 0.002,
                     }}
                 >
-                    <Marker coordinate={ubicacionCliente} title="Tú" pinColor="green" />
-                    <Marker coordinate={ubicacionTricimotero} title="Tricimotero" pinColor="blue" />
+                    <Marker
+                        coordinate={ubicacionCliente}  // Debes pasar las coordenadas como una propiedad
+                        title="Tú"  // Título del marcador
+                        pinColor="green"  // Color del pin (si no usas imagen personalizada)
+                    >
+                        <Image
+                            source={icons.point} // Aquí asignamos el ícono de pin
+                            style={{ width: 30, height: 30 }} // Ajusta el tamaño del ícono según sea necesario
+                        />
+                    </Marker>
+                    <Marker
+                        coordinate={ubicacionTricimotero}
+                        title="Tricimotero"
+                        pinColor="blue"
+                    >
+                        <Image
+                            source={icons.marker} // Icono de marker
+                            style={{ width: 40, height: 30 }} // Ajusta el tamaño del ícono según lo necesites
+                        />
+                    </Marker>
                     {rutaCoords.length > 0 && (
                         <Polyline coordinates={rutaCoords} strokeColor="#4285F4" strokeWidth={4} />
                     )}

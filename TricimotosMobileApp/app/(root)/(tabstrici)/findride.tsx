@@ -36,10 +36,10 @@ const SolicitudesTricimoteroScreen = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
+      console.log(data)
       setSolicitudes(data);
     } catch (err) {
       console.error("Error al cargar solicitudes:", err);
-      Alert.alert("Error", "No se pudieron obtener las solicitudes.");
     } finally {
       setLoading(false);
     }
@@ -84,7 +84,7 @@ const SolicitudesTricimoteroScreen = () => {
   const renderItem = ({ item }: any) => (
     <View className="bg-white p-4 mb-4 rounded-2xl shadow-md">
       <Text className="text-lg font-bold text-green-800 mb-2">
-        Cliente: {item.cliente_clerk_id || "Desconocido"}
+         Cliente: {item.cliente_full_name || "Desconocido"}
       </Text>
       <Text className="text-sm text-gray-700 mb-1">📍 Origen: {item.origen}</Text>
       <Text className="text-sm text-gray-700 mb-1">🎯 Destino: {item.destino}</Text>

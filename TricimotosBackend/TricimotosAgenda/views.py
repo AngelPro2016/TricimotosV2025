@@ -6,7 +6,8 @@ from .serializers import SolicitudSerializer, SolicitudConUbicacionSerializer
 from .authentication import ClerkAuthentication
 from django.utils import timezone
 from django.db import connection
-
+from django.db import models
+from geopy.distance import geodesic
 @api_view(['POST'])
 @authentication_classes([ClerkAuthentication])
 def crear_solicitud(request):
@@ -104,19 +105,19 @@ def aceptar_solicitud(request, solicitud_id):
         clerk_user_id=solicitud.cliente_clerk_id
     )
 
-    # Crear el viaje (Ride) sin los atributos de destino_latitud y destino_longitud
     ride = Ride.objects.create(
-        origin_address=solicitud.origen,
-        destination_address=solicitud.destino,  # Mantener el destino como texto
-        origin_latitude=ubicacion_cliente.latitud,
-        origin_longitude=ubicacion_cliente.longitud,
-        ride_time=30,  # Puedes calcular la duración en minutos o asignar un valor predeterminado
-        fare_price=100.00,  # Aquí podrías calcular el precio basado en la distancia y tiempo
-        payment_status='pendiente',  # El estado del pago inicial
-        driver=None,  # Este campo se asignará más tarde cuando se asigne un conductor
-        clerk_user_id=tricimotero_clerk_id,  # El ID del tricimotero
-        created_at=timezone.now()
-    )
+    origin_address=solicitud.origen,
+    destination_address=solicitud.destino,
+    origin_latitude=ubicacion_cliente.latitud,
+    origin_longitude=ubicacion_cliente.longitud,
+    ride_time=30,
+    fare_price=100.00,
+    payment_status='pendiente',
+    driver=None,
+    clerk_user_id=tricimotero_clerk_id,        # Tricimotero
+    cliente_clerk_id=solicitud.cliente_clerk_id,  # Cliente
+    created_at=timezone.now()
+)
 
     # Retornar la respuesta
     return Response({
@@ -252,3 +253,127 @@ def ubicacion_cliente(request):
         "actualizado": ubicacion.actualizado,
     })
 
+@api_view(['GET'])
+@authentication_classes([ClerkAuthentication])
+def obtener_rides_en_camino(request):
+    user_id = request.user  # Clerk ID del usuario autenticado
+    rides = Ride.objects.filter(
+        models.Q(clerk_user_id=user_id) | models.Q(cliente_clerk_id=user_id),
+        estado='encamino'
+    )
+
+    data = [
+        {
+            'ride_id': ride.id,
+            'origin': ride.origin_address,
+            'destination': ride.destination_address,
+            'estado': ride.estado,
+            'conductor_clerk_id': ride.clerk_user_id,
+            'cliente_clerk_id': ride.cliente_clerk_id,
+        }
+        for ride in rides
+    ]
+    return Response(data, status=status.HTTP_200_OK)
+from math import radians, sin, cos, sqrt, atan2
+@api_view(['GET'])
+@authentication_classes([ClerkAuthentication])
+def distancia_entre_cliente_y_tricimotero(request):
+    ride_id = request.GET.get("ride_id")
+    if not ride_id:
+        return Response({"detail": "ride_id es requerido"}, status=400)
+
+    try:
+        ride = Ride.objects.get(id=ride_id)
+    except Ride.DoesNotExist:
+        return Response({"detail": "Ride no encontrado"}, status=404)
+
+    # Extraer Clerk IDs del cliente y tricimotero desde el modelo Ride
+    cliente_id = ride.cliente_clerk_id
+    tricimotero_id = ride.clerk_user_id
+    # Buscar ubicaciones más recientes
+    ubicacion_cliente = Ubicacion.objects.filter(clerk_user_id=cliente_id).first()
+    ubicacion_tricimotero = UbicacionTricimotero.objects.filter(clerk_user_id=tricimotero_id).first()
+
+    if not ubicacion_cliente or not ubicacion_tricimotero:
+        return Response({"detail": "No se encontraron ubicaciones para ambos usuarios"}, status=404)
+
+    # Función de cálculo de distancia (fórmula Haversine)
+    def calcular_distancia(lat1, lon1, lat2, lon2):
+        R = 6371000  # Radio de la Tierra en metros
+        φ1, φ2 = radians(lat1), radians(lat2)
+        Δφ = radians(lat2 - lat1)
+        Δλ = radians(lon2 - lon1)
+
+        a = sin(Δφ / 2)**2 + cos(φ1) * cos(φ2) * sin(Δλ / 2)**2
+        c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        return R * c  # Distancia en metros
+
+    distancia = calcular_distancia(
+        ubicacion_cliente.latitud, ubicacion_cliente.longitud,
+        ubicacion_tricimotero.latitud, ubicacion_tricimotero.longitud
+    )
+
+    return Response({
+        "distancia_metros": round(distancia, 2),
+        "cliente": {
+            "lat": ubicacion_cliente.latitud,
+            "lng": ubicacion_cliente.longitud,
+            "actualizado": ubicacion_cliente.actualizado,
+        },
+        "tricimotero": {
+            "lat": ubicacion_tricimotero.latitud,
+            "lng": ubicacion_tricimotero.longitud,
+            "actualizado": ubicacion_tricimotero.actualizado,
+        }
+    })
+@api_view(["POST"])
+@authentication_classes([ClerkAuthentication])
+def marcar_ha_llegado(request):
+    ride_id = request.data.get("ride_id")
+    
+    if not ride_id:
+        return Response({"detail": "Falta ride_id"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        ride = Ride.objects.get(id=ride_id)
+    except Ride.DoesNotExist:
+        return Response({"detail": "Ride no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+    
+    ride.estado = "hallegado"
+    ride.save()
+
+    return Response({"detail": "Estado actualizado a 'ha_llegado'"}, status=status.HTTP_200_OK)
+@api_view(['GET'])
+@authentication_classes([ClerkAuthentication])
+def obtener_estado_ride(request):
+    ride_id = request.GET.get("ride_id")
+    if not ride_id:
+        return Response({"detail": "Falta ride_id"}, status=400)
+
+    try:
+        ride = Ride.objects.get(id=ride_id)
+    except Ride.DoesNotExist:
+        return Response({"detail": "Ride no encontrado"}, status=404)
+
+    return Response({"estado": ride.estado})
+@api_view(['GET'])
+@authentication_classes([ClerkAuthentication])
+def carreras_halllegado_conductor(request):
+    user_id = request.user  # Clerk ID del tricimotero autenticado
+    print(user_id)
+    rides = Ride.objects.filter(
+        clerk_user_id=user_id,
+        estado='hallegado'
+    )
+
+    data = [
+        {
+            "id": ride.id,
+            "origen": ride.origin_address,
+            "destino": ride.destination_address,
+            "estado": ride.estado,
+            "hora_programada": ride.created_at
+        }
+        for ride in rides
+    ]
+    return Response(data, status=status.HTTP_200_OK)

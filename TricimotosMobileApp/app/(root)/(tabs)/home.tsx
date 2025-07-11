@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -11,13 +11,50 @@ import * as Animatable from "react-native-animatable";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useAuth } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
+import { BASE_URL } from "@/constants/env";
 
 const { width } = Dimensions.get("window");
 
 const Home = () => {
-  const { signOut } = useAuth();
+  const { signOut, getToken } = useAuth();
   const router = useRouter();
+  useEffect(() => {
+    const verificarRideEncamino = async () => {
+      try {
+        const token = await getToken();
 
+        const res = await fetch(`${BASE_URL}/api/rides/en-camino/`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (res.ok) {
+          const rides = await res.json();
+
+          if (rides.length > 0) {
+            // Hay al menos un ride en camino, redirigimos
+            router.replace({
+              pathname: "/ProcesoDeRecogida",
+              params: { tricimotero: rides[0].conductor_clerk_id },
+            });
+          }
+          // Si no hay ride, no hacemos nada
+        } else {
+          console.warn("No se pudo obtener rides en camino");
+        }
+      } catch (error) {
+        console.error("Error al verificar ride en camino:", error);
+        Alert.alert(
+          "Error",
+          "No se pudo verificar el estado de la carrera. Intenta más tarde."
+        );
+      }
+    };
+
+    verificarRideEncamino();
+  }, []);
   const handleSignOut = () => {
     signOut();
     router.replace("/(auth)/sign-in");
@@ -38,7 +75,7 @@ const Home = () => {
       <Animatable.Image
         animation="bounceIn"
         duration={1500}
-        source={require("../(tabs)/logotrici.png")}
+        source={require("@/assets/images/logotrici.png")}
         style={styles.logo}
         resizeMode="contain"
       />
@@ -104,11 +141,6 @@ const Home = () => {
       </View>
 
       {/* CTA */}
-      <Animatable.View animation="pulse" iterationCount="infinite" delay={2000}>
-        <TouchableOpacity style={styles.ctaButton}>
-          <Text style={styles.ctaText}></Text>
-        </TouchableOpacity>
-      </Animatable.View>
     </ScrollView>
   );
 };

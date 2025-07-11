@@ -7,6 +7,8 @@ import * as Location from "expo-location";
 import Constants from "expo-constants";
 import { icons } from "@/constants";
 import { Image } from 'react-native';
+import { useRouter } from "expo-router";
+import { BASE_URL } from "@/constants/env";
 const GOOGLE_API_KEY = "AIzaSyCOOfG2mcr3kXZpMaUOk_IKOnRViF6mNaw";
 
 const ProcesoDeRecogida = () => {
@@ -17,7 +19,100 @@ const ProcesoDeRecogida = () => {
     const [tiempoEstimado, setTiempoEstimado] = useState("");
     const { getToken } = useAuth();
     const mapRef = useRef(null);
+    const [rideInfo, setRideInfo] = useState<RideInfo | null>(null);
+    const [distanciaMetros, setDistanciaMetros] = useState(null);
+    const [mostrarModalLlegada, setMostrarModalLlegada] = useState(false);
+    const router = useRouter();
+    type RideInfo = {
+        ride_id: number;
+        estado: string;
+        origin: string;
+        destination: string;
+    };
+    useEffect(() => {
+    if (!rideInfo?.ride_id) return;
 
+    const verificarEstadoRide = async () => {
+        try {
+            const token = await getToken();
+            const res = await fetch(`${BASE_URL}/api/rides/estado/?ride_id=${rideInfo.ride_id}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.estado === "hallegado") {
+                    router.replace("/confirmacion");
+                }
+            }
+        } catch (error) {
+            console.error("❌ Error consultando estado del ride:", error);
+        }
+    };
+
+    const interval = setInterval(verificarEstadoRide, 5000); // cada 5 segundos
+    return () => clearInterval(interval);
+}, [rideInfo]);
+    useEffect(() => {
+        if (!rideInfo?.ride_id) return;
+
+        consultarDistancia();
+        const interval = setInterval(() => {
+            consultarDistancia();
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [rideInfo]);
+
+    const consultarDistancia = async () => {
+        try {
+            const token = await getToken();
+            const res = await fetch(`${BASE_URL}/api/distancia-cliente-tricimotero/?ride_id=${rideInfo?.ride_id}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setDistanciaMetros(data.distancia_metros);
+                if (data.distancia_metros < 30 && !mostrarModalLlegada) {
+                    setMostrarModalLlegada(true); // 🎯 muestra el modal cuando esté cerca
+                }
+            } else {
+                console.log("No se pudo calcular la distancia");
+            }
+        } catch (err) {
+            console.error("❌ Error consultando distancia:", err);
+        }
+    };
+    useEffect(() => {
+        const consultarRideActivo = async () => {
+            try {
+                const token = await getToken();
+                const res = await fetch(`${BASE_URL}/api/rides/en-camino/`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+
+                if (res.ok) {
+                    const data = await res.json();
+                    console.log("✅ Ride activo encontrado:", data[0]);
+                    setRideInfo(data[0]);
+                } else {
+                    console.log("ℹ️ No hay ride activo para el cliente.");
+                }
+            } catch (error) {
+                console.error("❌ Error al consultar ride activo:", error);
+            }
+        };
+
+        consultarRideActivo();
+    }, []);
     // 🛰️ Enviar ubicación del cliente cada 5s
     useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -34,7 +129,7 @@ const ProcesoDeRecogida = () => {
                 });
 
                 const token = await getToken();
-                await fetch("http://192.168.10.170:8000/api/ubicacion/", {
+                await fetch(`${BASE_URL}/api/ubicacion/`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -57,7 +152,7 @@ const ProcesoDeRecogida = () => {
         try {
             const token = await getToken();
             const res = await fetch(
-                `http://192.168.10.170:8000/api/ubicacion-tricimotero-info/?id=${tricimotero}`,
+                `${BASE_URL}/api/ubicacion-tricimotero-info/?id=${tricimotero}`,
                 {
                     headers: { Authorization: `Bearer ${token}` },
                 }
@@ -133,6 +228,30 @@ const ProcesoDeRecogida = () => {
         }
         return points;
     };
+    const confirmarLlegada = async () => {
+        try {
+            const token = await getToken();
+            const res = await fetch(`${BASE_URL}/api/rides/marcar-ha-llegado/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ ride_id: rideInfo?.ride_id }),
+            });
+
+            if (res.ok) {
+                setMostrarModalLlegada(false);
+                console.log("🚀 Ride marcado como 'ha_llegado'");
+                // Opcional: redirigir a otra pantalla
+            } else {
+                console.log("❌ Error al marcar como 'ha_llegado'");
+            }
+        } catch (err) {
+            console.error("❌ Error al confirmar llegada:", err);
+        }
+    };
+
 
     return (
         <View className="flex-1">
@@ -162,6 +281,96 @@ const ProcesoDeRecogida = () => {
                     </Text>
                 </View>
             )}
+            {distanciaMetros !== null && (
+                <View
+                    style={{
+                        position: "absolute",
+                        bottom: 40,
+                        left: 20,
+                        right: 20,
+                        backgroundColor: "white",
+                        padding: 10,
+                        borderRadius: 10,
+                        alignItems: "center",
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 4,
+                        elevation: 5,
+                        zIndex: 10,
+                    }}
+                >
+                    <Text style={{ fontSize: 14, color: "#4B5563" }}>
+                        📍 Distancia al tricimotero: {distanciaMetros < 1000
+                            ? `${distanciaMetros.toFixed(1)} metros`
+                            : `${(distanciaMetros / 1000).toFixed(2)} km`}
+                    </Text>
+
+                    {distanciaMetros < 30 && (
+                        <Text style={{ fontWeight: "bold", color: "#16a34a", marginTop: 5 }}>
+                            ✅ El tricimotero ha llegado
+                        </Text>
+                    )}
+                </View>
+            )}
+            {mostrarModalLlegada && (
+                <View
+                    style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: "rgba(0,0,0,0.5)",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        zIndex: 20,
+                    }}
+                >
+                    <View
+                        style={{
+                            backgroundColor: "white",
+                            padding: 24,
+                            borderRadius: 16,
+                            alignItems: "center",
+                            width: "80%",
+                        }}
+                    >
+                        <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>
+                            ✅ ¡Tu tricimotero ha llegado!
+                        </Text>
+                        <Text style={{ fontSize: 15, color: "#4B5563", marginBottom: 20, textAlign: "center" }}>
+                            ¿Confirmas que ya te recogió?
+                        </Text>
+                        <View style={{ flexDirection: "row", gap: 10 }}>
+                            <Text
+                                style={{
+                                    backgroundColor: "#e5e7eb",
+                                    padding: 10,
+                                    borderRadius: 8,
+                                    marginRight: 10,
+                                }}
+                                onPress={() => setMostrarModalLlegada(false)}
+                            >
+                                Cancelar
+                            </Text>
+                            <Text
+                                style={{
+                                    backgroundColor: "#22c55e",
+                                    color: "white",
+                                    padding: 10,
+                                    borderRadius: 8,
+                                }}
+                                onPress={confirmarLlegada}
+                            >
+                                Sí, me recogió
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+            )}
+
+
             {ubicacionCliente && ubicacionTricimotero ? (
                 <MapView
                     ref={mapRef}

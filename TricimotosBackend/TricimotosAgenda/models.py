@@ -27,6 +27,12 @@ class Ride(models.Model):
     driver = models.ForeignKey(Driver, on_delete=models.SET_NULL, null=True, blank=True)
     clerk_user_id = models.CharField(max_length=255)  # en lugar de ForeignKey a User
     created_at = models.DateTimeField(auto_now_add=True)
+    cliente_clerk_id = models.CharField(max_length=255,null=True)  # cliente
+    estado = models.CharField(
+        max_length=20,
+        choices=[('encamino', 'En camino'), ('hallegado', 'Ha llegado')],
+        default='encamino'
+    )
 
     def __str__(self):
         return f"Ride from {self.origin_address} to {self.destination_address}"

@@ -13,7 +13,7 @@ import { useRouter, useNavigation } from "expo-router";
 import { useNavigationContainerRef } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-
+import { BASE_URL } from "@/constants/env";
 const SolicitudesTricimoteroScreen = () => {
   const { getToken } = useAuth();
   const router = useRouter();
@@ -32,11 +32,10 @@ const SolicitudesTricimoteroScreen = () => {
   const fetchSolicitudes = async () => {
     try {
       const token = await getToken();
-      const res = await fetch("http://192.168.10.170:8000/api/solicitudes/pendientes", {
+      const res = await fetch(`${BASE_URL}/api/solicitudes/pendientes`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      console.log(data)
       setSolicitudes(data);
     } catch (err) {
       console.error("Error al cargar solicitudes:", err);
@@ -48,7 +47,7 @@ const SolicitudesTricimoteroScreen = () => {
   const aceptarSolicitud = async (id: number) => {
   try {
     const token = await getToken();
-    const res = await fetch(`http://192.168.10.170:8000/api/solicitud/aceptar/${id}/`, {
+    const res = await fetch(`${BASE_URL}/api/solicitud/aceptar/${id}/`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });

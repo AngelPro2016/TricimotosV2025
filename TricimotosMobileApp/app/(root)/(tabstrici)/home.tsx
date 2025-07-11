@@ -25,7 +25,7 @@ const Home = () => {
       <Animatable.Image
         animation="bounceIn"
         duration={1500}
-        source={require("../(tabs)/logotrici.png")}
+        source={require("@/assets/images/logotrici.png")}
         style={styles.logo}
         resizeMode="contain"
       />

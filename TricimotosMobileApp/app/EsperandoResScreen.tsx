@@ -9,56 +9,14 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuth } from "@clerk/clerk-expo";
 import * as Location from "expo-location";
 import LottieView from "lottie-react-native";  // Para usar la animación de JSON
-import animationData from "./(root)/(tabs)/Animation - 1749683959154.json";  // Ruta de la animación JSON
-
+import animationData from "@/assets/animations/waiting.json";  // Ruta de la animación JSON
+import { BASE_URL } from "@/constants/env";
 const EsperandoRespuestaScreen = () => {
   const { origen, destino, hora } = useLocalSearchParams();
   const { getToken } = useAuth();
   const [isAvailable, setIsAvailable] = useState(true);
   const [seconds, setSeconds] = useState(0);
   const router = useRouter();
-
-  // 📤 Enviar solicitud al backend cuando se carga
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-
-    const enviarUbicacionPeriodica = async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") return;
-
-        interval = setInterval(async () => {
-          const { coords } = await Location.getCurrentPositionAsync({});
-          const token = await getToken();
-
-          const res = await fetch("http://192.168.10.170:8000/api/ubicacion/", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              latitud: coords.latitude,
-              longitud: coords.longitude,
-            }),
-          });
-
-          if (!res.ok) {
-            console.warn("No se pudo actualizar ubicación.");
-          } else {
-            console.log("📍 Ubicación enviada:", coords);
-          }
-        }, 5000); // cada 5 segundos
-      } catch (err) {
-        console.error("Error al obtener ubicación:", err);
-      }
-    };
-
-    enviarUbicacionPeriodica();
-
-    return () => clearInterval(interval); // limpieza
-  }, []);
-
   // ⏱️ Temporizador
   useEffect(() => {
     const timer = setInterval(() => {
@@ -79,7 +37,7 @@ const EsperandoRespuestaScreen = () => {
   const interval = setInterval(async () => {
     try {
       const token = await getToken();
-      const res = await fetch("http://192.168.10.170:8000/api/estado-solicitud/", {
+      const res = await fetch(`${BASE_URL}/api/estado-solicitud/`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -89,6 +47,7 @@ const EsperandoRespuestaScreen = () => {
       if (res.ok) {
         const data = await res.json();
         if (data.estado === "aceptada") {
+          Alert.alert("Solicitud aceptada por un conductor.");
           console.log("✅ Solicitud aceptada por:", data.asignado);
           clearInterval(interval);  // Detener polling
           router.replace({

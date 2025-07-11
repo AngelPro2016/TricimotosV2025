@@ -6,11 +6,12 @@ import { useAuth } from "@clerk/clerk-expo";
 import * as Location from "expo-location";
 import { icons } from "@/constants";
 import { Image } from "react-native";
-
+import { useRouter } from "expo-router";
+import { BASE_URL } from "@/constants/env";
 const GOOGLE_API_KEY = "AIzaSyCOOfG2mcr3kXZpMaUOk_IKOnRViF6mNaw";
 
 const ProcesoDeRecogidaTricimotero = () => {
-  const { clienteId } = useLocalSearchParams();
+  const { clienteId, rideId } = useLocalSearchParams();
   const [ubicacionCliente, setUbicacionCliente] = useState(null);
   const [ubicacionTricimotero, setUbicacionTricimotero] = useState(null);
   const [rutaCoords, setRutaCoords] = useState([]);
@@ -18,7 +19,64 @@ const ProcesoDeRecogidaTricimotero = () => {
   const [region, setRegion] = useState(null); // Estado para manejar la región del mapa
   const { getToken } = useAuth();
   const mapRef = useRef(null); // Referencia del mapa
+  const [distanciaMetros, setDistanciaMetros] = useState(null);
+  const router = useRouter();
+   useEffect(() => {
+      if (!rideId) return;
+  
+      const verificarEstadoRide = async () => {
+          try {
+              const token = await getToken();
+              const res = await fetch(`${BASE_URL}/api/rides/estado/?ride_id=${rideId}`, {
+                  headers: {
+                      Authorization: `Bearer ${token}`,
+                  },
+              });
+  
+              if (res.ok) {
+                  const data = await res.json();
+                  if (data.estado === "hallegado") {
+                      router.replace("/confirmacion");
+                  }
+              }
+          } catch (error) {
+              console.error("❌ Error consultando estado del ride:", error);
+          }
+      };
+  
+      const interval = setInterval(verificarEstadoRide, 5000); // cada 5 segundos
+      return () => clearInterval(interval);
+  }, [rideId]);
+  useEffect(() => {
+    if (!rideId) return;
 
+    consultarDistancia();
+    const interval = setInterval(() => {
+      consultarDistancia();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [rideId]);
+
+  const consultarDistancia = async () => {
+    try {
+      const token = await getToken();
+      const res = await fetch(`${BASE_URL}/api/distancia-cliente-tricimotero/?ride_id=${rideId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setDistanciaMetros(data.distancia_metros);
+      } else {
+        console.log("No se pudo calcular la distancia");
+      }
+    } catch (err) {
+      console.error("❌ Error consultando distancia:", err);
+    }
+  };
   // 🛰️ Obtener la ubicación actual del dispositivo y configurar el mapa
   useEffect(() => {
     const obtenerUbicacionActual = async () => {
@@ -61,7 +119,7 @@ const ProcesoDeRecogidaTricimotero = () => {
           });
 
           const token = await getToken();
-          await fetch("http://192.168.10.170:8000/api/ubicacion-tricimotero/", {
+          await fetch(`${BASE_URL}/api/ubicacion-tricimotero/`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -87,7 +145,7 @@ const ProcesoDeRecogidaTricimotero = () => {
     try {
       const token = await getToken();
       const res = await fetch(
-        `http://192.168.10.170:8000/api/ubicacion-cliente/?id=${clienteId}`,
+        `${BASE_URL}/api/ubicacion-cliente/?id=${clienteId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -166,7 +224,6 @@ const ProcesoDeRecogidaTricimotero = () => {
     }
     return points;
   };
-
   // Manejador de cambio de región (zoom y posición)
   const onRegionChange = (newRegion) => {
     setRegion(newRegion); // Actualiza el estado con la nueva región
@@ -221,7 +278,38 @@ const ProcesoDeRecogidaTricimotero = () => {
           )}
         </View>
       )}
+      {distanciaMetros !== null && (
+        <View
+          style={{
+            position: "absolute",
+            bottom: 40,
+            left: 20,
+            right: 20,
+            backgroundColor: "white",
+            padding: 10,
+            borderRadius: 10,
+            alignItems: "center",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.2,
+            shadowRadius: 4,
+            elevation: 5,
+            zIndex: 10,
+          }}
+        >
+          <Text style={{ fontSize: 14, color: "#4B5563" }}>
+            📍 Distancia al cliente: {distanciaMetros < 1000
+              ? `${distanciaMetros.toFixed(1)} metros`
+              : `${(distanciaMetros / 1000).toFixed(2)} km`}
+          </Text>
 
+          {distanciaMetros < 30 && (
+            <Text style={{ fontWeight: "bold", color: "#16a34a", marginTop: 5 }}>
+              ✅ dEstas cerca del cliente!
+            </Text>
+          )}
+        </View>
+      )}
       {ubicacionCliente && ubicacionTricimotero ? (
         <MapView
           ref={mapRef}

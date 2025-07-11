@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Text, View, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { useAuth } from '@clerk/clerk-expo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import { BASE_URL } from "@/constants/env";
 const CarrerasAceptadasScreen = () => {
   const { getToken } = useAuth();
   const [carreras, setCarreras] = useState([]);
@@ -13,7 +13,7 @@ const CarrerasAceptadasScreen = () => {
     const fetchCarreras = async () => {
       try {
         const token = await getToken();
-        const response = await fetch('http://192.168.10.170:8000/api/carreras/aceptadas/', {
+        const response = await fetch(`${BASE_URL}/api/carreras/hallegado/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!response.ok) {
@@ -30,7 +30,7 @@ const CarrerasAceptadasScreen = () => {
 
     fetchCarreras();
   }, []);
-  
+
 
   const renderItem = ({ item }: any) => (
     <View style={{ backgroundColor: 'white', padding: 10, marginBottom: 10, borderRadius: 8 }}>

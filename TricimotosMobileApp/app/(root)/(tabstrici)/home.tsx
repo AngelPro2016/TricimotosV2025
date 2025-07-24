@@ -7,16 +7,60 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from "react-native";
 import * as Animatable from "react-native-animatable";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useRouter } from "expo-router";
+import { useEffect } from "react";
+import { useAuth } from "@clerk/clerk-expo";
+import { BASE_URL } from "@/constants/env";
 
 const { width } = Dimensions.get("window");
 
 const Home = () => {
   const router = useRouter();
+  const { signOut, getToken } = useAuth();
+  useEffect(() => {
+  const verificarRideEncamino = async () => {
+    try {
+      const token = await getToken();
 
+      const res = await fetch(`${BASE_URL}/api/rides/en-camino/`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const rides = await res.json();
+
+        if (rides.length > 0) {
+          const data = rides[0];
+
+          router.replace({
+            pathname: "/ProcesoDeRecogidaTricimotero",
+            params: {
+              rideId: data.ride_id,
+              clienteId: data.cliente_clerk_id,
+            },
+          });
+        }
+      } else {
+        console.warn("No se pudo obtener rides en camino");
+      }
+    } catch (error) {
+      console.error("Error al verificar ride en camino:", error);
+      Alert.alert(
+        "Error",
+        "No se pudo verificar el estado de la carrera. Intenta más tarde."
+      );
+    }
+  };
+
+  verificarRideEncamino();
+}, []);
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.decorativeLine1} />

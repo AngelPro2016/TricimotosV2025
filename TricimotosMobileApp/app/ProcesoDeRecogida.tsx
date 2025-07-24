@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, Text, ActivityIndicator, Dimensions } from "react-native";
+import { View, Text, ActivityIndicator, Dimensions, Modal, TouchableOpacity, Vibration, Alert } from "react-native";
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
 import { useLocalSearchParams } from "expo-router";
 import { useAuth } from "@clerk/clerk-expo";
@@ -9,6 +9,7 @@ import { icons } from "@/constants";
 import { Image } from 'react-native';
 import { useRouter } from "expo-router";
 import { BASE_URL } from "@/constants/env";
+
 const GOOGLE_API_KEY = "AIzaSyCOOfG2mcr3kXZpMaUOk_IKOnRViF6mNaw";
 
 const ProcesoDeRecogida = () => {
@@ -22,6 +23,7 @@ const ProcesoDeRecogida = () => {
     const [rideInfo, setRideInfo] = useState<RideInfo | null>(null);
     const [distanciaMetros, setDistanciaMetros] = useState(null);
     const [mostrarModalLlegada, setMostrarModalLlegada] = useState(false);
+    const [countdown, setCountdown] = useState(10);
     const router = useRouter();
     type RideInfo = {
         ride_id: number;
@@ -30,31 +32,57 @@ const ProcesoDeRecogida = () => {
         destination: string;
     };
     useEffect(() => {
-    if (!rideInfo?.ride_id) return;
+        if (!mostrarModalLlegada) return;
 
-    const verificarEstadoRide = async () => {
-        try {
-            const token = await getToken();
-            const res = await fetch(`${BASE_URL}/api/rides/estado/?ride_id=${rideInfo.ride_id}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+        setCountdown(10); // reiniciar cada vez que se muestre
 
-            if (res.ok) {
-                const data = await res.json();
-                if (data.estado === "hallegado") {
-                    router.replace("/confirmacion");
+        const interval = setInterval(() => {
+            setCountdown((prev) => {
+                if (prev <= 1) {
+                    confirmarLlegada(); // autoconfirmar
+                    clearInterval(interval);
+                    return 0;
                 }
-            }
-        } catch (error) {
-            console.error("❌ Error consultando estado del ride:", error);
-        }
-    };
+                if (prev === 4) {
+                    Vibration.vibrate(500); // vibra cuando faltan 3 segundos
+                }
+                return prev - 1;
+            });
+        }, 1000);
 
-    const interval = setInterval(verificarEstadoRide, 5000); // cada 5 segundos
-    return () => clearInterval(interval);
-}, [rideInfo]);
+        return () => clearInterval(interval);
+    }, [mostrarModalLlegada]);
+    useEffect(() => {
+        if (!rideInfo?.ride_id) return;
+
+        const verificarEstadoRide = async () => {
+            try {
+                const token = await getToken();
+                const res = await fetch(`${BASE_URL}/api/rides/estado/?ride_id=${rideInfo?.ride_id}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+
+                    if (data.estado === "hallegado") {
+                        router.replace("/confirmacion");
+                    } else if (data.estado === "cancelado") {
+                        Alert.alert("Viaje cancelado", "El viaje ha sido cancelado.");
+                        router.replace("../(tabs)/home");
+                    }
+                }
+            } catch (error) {
+                console.error("❌ Error consultando estado del ride:", error);
+            }
+        };
+
+
+        const interval = setInterval(verificarEstadoRide, 10000);
+        return () => clearInterval(interval);
+    }, [rideInfo]);
     useEffect(() => {
         if (!rideInfo?.ride_id) return;
 
@@ -140,7 +168,7 @@ const ProcesoDeRecogida = () => {
                         longitud: coords.longitude,
                     }),
                 });
-            }, 5000);
+            }, 15000);
         };
 
         iniciarEnvioUbicacion();
@@ -173,7 +201,6 @@ const ProcesoDeRecogida = () => {
             console.error("Error ubicando al tricimotero:", err);
         }
     };
-
     useEffect(() => {
         fetchUbicacionTricimotero();
         const interval = setInterval(fetchUbicacionTricimotero, 10000);
@@ -198,7 +225,6 @@ const ProcesoDeRecogida = () => {
             console.error("Error al trazar la ruta:", err);
         }
     };
-
     // 🔓 Decodificador de polylines
     const decodePolyline = (t, e = 5) => {
         let points = [];
@@ -251,133 +277,122 @@ const ProcesoDeRecogida = () => {
             console.error("❌ Error al confirmar llegada:", err);
         }
     };
+    const handleCancelarRide = async () => {
+        if (!rideInfo?.ride_id) return;
 
+        Alert.alert(
+            "Cancelar viaje",
+            "¿Estás seguro que deseas cancelar este viaje?",
+            [
+                { text: "No", style: "cancel" },
+                {
+                    text: "Sí",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            const token = await getToken();
+                            const res = await fetch(`${BASE_URL}/api/rides/${rideInfo.ride_id}/cancelar/`, {
+                                method: "PATCH",
+                                headers: {
+                                    Authorization: `Bearer ${token}`,
+                                },
+                            });
 
+                            const data = await res.json();
+
+                            if (!res.ok) throw new Error(data?.detail || "Error al cancelar ride");
+
+                            Alert.alert("✅ Viaje cancelado");
+                            router.replace("../(tabs)/home");
+                        } catch (err) {
+                            Alert.alert("Error", err.message);
+                        }
+                    },
+                },
+            ]
+        );
+    };
     return (
-        <View className="flex-1">
+        <View className="flex-1 bg-white">
+
             {tiempoEstimado && (
-                <View
-                    style={{
-                        position: "absolute",
-                        top: 40,
-                        left: 20,
-                        right: 20,
-                        backgroundColor: "white",
-                        padding: 12,
-                        borderRadius: 12,
-                        shadowColor: "#000",
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.25,
-                        shadowRadius: 3.84,
-                        elevation: 5,
-                        zIndex: 10,
-                    }}
-                >
-                    <Text style={{ fontSize: 18, fontWeight: "bold", color: "#047857", textAlign: "center" }}>
-                        Tricimotero en camino
+                <View className="absolute top-10 left-5 right-5 bg-white p-4 rounded-xl shadow-md z-10 items-center">
+                    <Text className="text-center text-lg font-semibold text-emerald-700">
+                        🚘 Tricimotero en camino
                     </Text>
-                    <Text style={{ fontSize: 14, color: "#4B5563", textAlign: "center", marginTop: 6 }}>
+                    <Text className="text-center text-sm text-gray-600 mt-1 mb-3">
                         ⏱️ Tiempo estimado: {tiempoEstimado}
                     </Text>
+
+                    <TouchableOpacity
+                        onPress={handleCancelarRide}
+                        className="bg-red-500 px-4 py-2 rounded-lg"
+                    >
+                        <Text className="text-white font-medium">Cancelar viaje</Text>
+                    </TouchableOpacity>
                 </View>
             )}
+
+
+
             {distanciaMetros !== null && (
-                <View
-                    style={{
-                        position: "absolute",
-                        bottom: 40,
-                        left: 20,
-                        right: 20,
-                        backgroundColor: "white",
-                        padding: 10,
-                        borderRadius: 10,
-                        alignItems: "center",
-                        shadowColor: "#000",
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.2,
-                        shadowRadius: 4,
-                        elevation: 5,
-                        zIndex: 10,
-                    }}
-                >
-                    <Text style={{ fontSize: 14, color: "#4B5563" }}>
-                        📍 Distancia al tricimotero: {distanciaMetros < 1000
+                <View className="absolute bottom-10 left-5 right-5 bg-white p-4 rounded-xl shadow-md items-center z-10">
+                    <Text className="text-gray-700 text-sm">
+                        📍 Distancia al tricimotero:{" "}
+                        {distanciaMetros < 1000
                             ? `${distanciaMetros.toFixed(1)} metros`
                             : `${(distanciaMetros / 1000).toFixed(2)} km`}
                     </Text>
 
                     {distanciaMetros < 30 && (
-                        <Text style={{ fontWeight: "bold", color: "#16a34a", marginTop: 5 }}>
+                        <Text className="text-emerald-600 font-semibold mt-1">
                             ✅ El tricimotero ha llegado
                         </Text>
                     )}
-                </View>
-            )}
-            {mostrarModalLlegada && (
-                <View
-                    style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: "rgba(0,0,0,0.5)",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        zIndex: 20,
-                    }}
-                >
-                    <View
-                        style={{
-                            backgroundColor: "white",
-                            padding: 24,
-                            borderRadius: 16,
-                            alignItems: "center",
-                            width: "80%",
-                        }}
-                    >
-                        <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>
-                            ✅ ¡Tu tricimotero ha llegado!
-                        </Text>
-                        <Text style={{ fontSize: 15, color: "#4B5563", marginBottom: 20, textAlign: "center" }}>
-                            ¿Confirmas que ya te recogió?
-                        </Text>
-                        <View style={{ flexDirection: "row", gap: 10 }}>
-                            <Text
-                                style={{
-                                    backgroundColor: "#e5e7eb",
-                                    padding: 10,
-                                    borderRadius: 8,
-                                    marginRight: 10,
-                                }}
-                                onPress={() => setMostrarModalLlegada(false)}
-                            >
-                                Cancelar
-                            </Text>
-                            <Text
-                                style={{
-                                    backgroundColor: "#22c55e",
-                                    color: "white",
-                                    padding: 10,
-                                    borderRadius: 8,
-                                }}
-                                onPress={confirmarLlegada}
-                            >
-                                Sí, me recogió
-                            </Text>
-                        </View>
-                    </View>
+
                 </View>
             )}
 
+            {mostrarModalLlegada && (
+                <Modal transparent visible={mostrarModalLlegada} animationType="fade">
+                    <View className="flex-1 bg-black/50 justify-center items-center z-20">
+                        <View className="bg-white p-6 rounded-2xl items-center w-11/12 shadow-lg">
+                            <Text className="text-xl font-bold text-center">
+                                ✅ ¡Tu tricimotero ha llegado!
+                            </Text>
+                            <Text className="text-gray-600 text-center mt-2">
+                                ¿Confirmas que ya te recogió?
+                            </Text>
+
+                            <Text className="text-red-500 text-sm mt-3">
+                                Confirmando automáticamente en {countdown} segundos...
+                            </Text>
+
+                            <View className="flex-row gap-4 mt-6">
+                                <TouchableOpacity
+                                    className="bg-gray-200 px-5 py-2 rounded-lg"
+                                    onPress={() => setMostrarModalLlegada(false)}
+                                >
+                                    <Text className="text-gray-800 font-medium">Cancelar</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    className="bg-emerald-600 px-5 py-2 rounded-lg"
+                                    onPress={confirmarLlegada}
+                                >
+                                    <Text className="text-white font-medium">Sí, me recogió</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+            )}
 
             {ubicacionCliente && ubicacionTricimotero ? (
                 <MapView
                     ref={mapRef}
                     provider={PROVIDER_GOOGLE}
-                    style={{
-                        width: "100%", height: "100%"
-                    }}
+                    className="w-full h-full"
                     region={{
                         latitude: ubicacionCliente.latitude,
                         longitude: ubicacionCliente.longitude,
@@ -385,33 +400,20 @@ const ProcesoDeRecogida = () => {
                         longitudeDelta: 0.002,
                     }}
                 >
-                    <Marker
-                        coordinate={ubicacionCliente}  // Debes pasar las coordenadas como una propiedad
-                        title="Tú"  // Título del marcador
-                        pinColor="green"  // Color del pin (si no usas imagen personalizada)
-                    >
-                        <Image
-                            source={icons.point} // Aquí asignamos el ícono de pin
-                            style={{ width: 30, height: 30 }} // Ajusta el tamaño del ícono según sea necesario
-                        />
+                    <Marker coordinate={ubicacionCliente} title="Tú" pinColor="green">
+                        <Image source={icons.point} style={{ width: 30, height: 30 }} />
                     </Marker>
-                    <Marker
-                        coordinate={ubicacionTricimotero}
-                        title="Tricimotero"
-                        pinColor="blue"
-                    >
-                        <Image
-                            source={icons.marker} // Icono de marker
-                            style={{ width: 40, height: 30 }} // Ajusta el tamaño del ícono según lo necesites
-                        />
+                    <Marker coordinate={ubicacionTricimotero} title="Tricimotero" pinColor="blue">
+                        <Image source={icons.marker} style={{ width: 40, height: 30 }} />
                     </Marker>
                     {rutaCoords.length > 0 && (
-                        <Polyline coordinates={rutaCoords} strokeColor="#4285F4" strokeWidth={4} />
+                        <Polyline coordinates={rutaCoords} strokeColor="#22c55e" strokeWidth={4} />
                     )}
                 </MapView>
             ) : (
-                <ActivityIndicator size="large" color="#4ade80" className="mt-10" />
+                <ActivityIndicator size="large" color="#22c55e" className="mt-10" />
             )}
+
         </View>
     );
 };

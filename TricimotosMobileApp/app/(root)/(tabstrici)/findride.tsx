@@ -75,7 +75,7 @@ const SolicitudesTricimoteroScreen = () => {
     fetchSolicitudes();
     const interval = setInterval(() => {
     fetchSolicitudes();
-  }, 3000);
+  }, 8000);
 
   return () => clearInterval(interval);
   }, []);

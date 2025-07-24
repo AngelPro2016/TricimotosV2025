@@ -80,7 +80,10 @@ const RidesScreen = () => {
 
       router.push({
         pathname: "/EsperandoResScreen",
-        params: payload,
+        params: {
+          ...payload,
+          solicitud_id: data.id,
+        },
       });
     } catch (err) {
       Alert.alert("Error", err.message);
@@ -109,13 +112,6 @@ const RidesScreen = () => {
             onChangeText={setDestinationAddress}
           />
         </View>
-
-        <CustomButton
-          title="Solicitar sin destino"
-          onPress={() => setDestinationAddress("")}
-          className="mt-1"
-        />
-
         <View className="mt-6">
           <Text className="font-semibold text-md mb-1">Ubicación actual:</Text>
           <Text className="text-gray-700">{address || "Obteniendo ubicación..."}</Text>

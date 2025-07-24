@@ -62,5 +62,14 @@
     "eslint-config-expo": "~9.2.0",
     "typescript": "~5.8.3"
   },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": ["react-native-swiper"],
+        "listUnknownPackages": false
+      }
+    }
+  },
+
   "private": true
 }

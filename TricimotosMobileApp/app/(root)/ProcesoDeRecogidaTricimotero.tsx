@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, Text, ActivityIndicator } from "react-native";
+import { View, Text, ActivityIndicator, Alert,TouchableOpacity } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { useLocalSearchParams } from "expo-router";
 import { useAuth } from "@clerk/clerk-expo";
@@ -21,31 +21,36 @@ const ProcesoDeRecogidaTricimotero = () => {
   const mapRef = useRef(null); // Referencia del mapa
   const [distanciaMetros, setDistanciaMetros] = useState(null);
   const router = useRouter();
-   useEffect(() => {
-      if (!rideId) return;
-  
-      const verificarEstadoRide = async () => {
-          try {
-              const token = await getToken();
-              const res = await fetch(`${BASE_URL}/api/rides/estado/?ride_id=${rideId}`, {
-                  headers: {
-                      Authorization: `Bearer ${token}`,
-                  },
-              });
-  
-              if (res.ok) {
-                  const data = await res.json();
-                  if (data.estado === "hallegado") {
-                      router.replace("/confirmacion");
-                  }
-              }
-          } catch (error) {
-              console.error("❌ Error consultando estado del ride:", error);
+  useEffect(() => {
+    if (!rideId) return;
+
+    const verificarEstadoRide = async () => {
+      try {
+        const token = await getToken();
+        const res = await fetch(`${BASE_URL}/api/rides/estado/?ride_id=${rideId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+
+          if (data.estado === "hallegado") {
+            router.replace("/confirmacion");
+          } else if (data.estado === "cancelado") {
+            Alert.alert("Viaje cancelado", "El viaje ha sido cancelado.");
+            router.replace("../(tabstrici)/home");
           }
-      };
-  
-      const interval = setInterval(verificarEstadoRide, 5000); // cada 5 segundos
-      return () => clearInterval(interval);
+        }
+      } catch (error) {
+        console.error("❌ Error consultando estado del ride:", error);
+      }
+    };
+
+
+    const interval = setInterval(verificarEstadoRide, 10000); // cada 5 segundos
+    return () => clearInterval(interval);
   }, [rideId]);
   useEffect(() => {
     if (!rideId) return;
@@ -53,7 +58,7 @@ const ProcesoDeRecogidaTricimotero = () => {
     consultarDistancia();
     const interval = setInterval(() => {
       consultarDistancia();
-    }, 5000);
+    }, 8000);
 
     return () => clearInterval(interval);
   }, [rideId]);
@@ -133,7 +138,7 @@ const ProcesoDeRecogidaTricimotero = () => {
         } catch (err) {
           console.error("❌ Error enviando ubicación:", err);
         }
-      }, 5000);
+      }, 15000);
     };
 
     iniciarEnvioUbicacion();
@@ -240,101 +245,105 @@ const ProcesoDeRecogidaTricimotero = () => {
       });
     }
   }, [ubicacionTricimotero, region]); // Actualiza solo cuando la ubicación del tricimotero cambie
-
+  const handleCancelarRide = async () => {
+          if (!rideId) return;
+  
+          Alert.alert(
+              "Cancelar viaje",
+              "¿Estás seguro que deseas cancelar este viaje?",
+              [
+                  { text: "No", style: "cancel" },
+                  {
+                      text: "Sí",
+                      style: "destructive",
+                      onPress: async () => {
+                          try {
+                              const token = await getToken();
+                              const res = await fetch(`${BASE_URL}/api/rides/${rideId}/cancelar/`, {
+                                  method: "PATCH",
+                                  headers: {
+                                      Authorization: `Bearer ${token}`,
+                                  },
+                              });
+  
+                              const data = await res.json();
+  
+                              if (!res.ok) throw new Error(data?.detail || "Error al cancelar ride");
+  
+                              Alert.alert("✅ Viaje cancelado");
+                              router.replace("../(tabstrici)/home");
+                          } catch (err) {
+                              Alert.alert("Error", err.message);
+                          }
+                      },
+                  },
+              ]
+          );
+      };
   return (
-    <View className="flex-1">
+    <View className="flex-1 bg-white">
+      {/* Info arriba */}
       {ubicacionCliente && (
-        <View
-          style={{
-            position: "absolute",
-            top: 40,
-            left: 20,
-            right: 20,
-            backgroundColor: "white",
-            borderRadius: 12,
-            padding: 12,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.2,
-            shadowRadius: 4,
-            elevation: 5,
-            zIndex: 10,
-          }}
-        >
-          <Text style={{ fontSize: 18, fontWeight: "bold", color: "#1e40af", textAlign: "center" }}>
+        <View className="absolute top-10 left-5 right-5 bg-white p-4 rounded-xl shadow-md z-10 items-center">
+          <Text className="text-center text-lg font-semibold text-blue-700">
             Dirígete al cliente
           </Text>
-
           {ubicacionCliente.timestamp && (
-            <Text style={{ fontSize: 13, color: "#4b5563", textAlign: "center", marginTop: 4 }}>
+            <Text className="text-center text-sm text-gray-600 mt-1">
               Última ubicación: {new Date(ubicacionCliente.timestamp).toLocaleTimeString()}
             </Text>
           )}
-
           {tiempoEstimado && (
-            <Text style={{ fontSize: 13, color: "#4b5563", textAlign: "center", marginTop: 2 }}>
-              ⏱️ ETA: {tiempoEstimado}
+            <Text className="text-center text-sm text-gray-600 mt-1">
+              ⏱️ Tiempo Estimado: {tiempoEstimado}
             </Text>
           )}
+          <TouchableOpacity
+            onPress={handleCancelarRide}
+            className="bg-red-500 px-4 py-2 rounded-lg"
+          >
+            <Text className="text-white font-medium">Cancelar viaje</Text>
+          </TouchableOpacity>
         </View>
       )}
+
+      {/* Distancia abajo */}
       {distanciaMetros !== null && (
-        <View
-          style={{
-            position: "absolute",
-            bottom: 40,
-            left: 20,
-            right: 20,
-            backgroundColor: "white",
-            padding: 10,
-            borderRadius: 10,
-            alignItems: "center",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.2,
-            shadowRadius: 4,
-            elevation: 5,
-            zIndex: 10,
-          }}
-        >
-          <Text style={{ fontSize: 14, color: "#4B5563" }}>
-            📍 Distancia al cliente: {distanciaMetros < 1000
+        <View className="absolute bottom-10 left-5 right-5 bg-white p-4 rounded-xl shadow-md items-center z-10">
+          <Text className="text-gray-700 text-sm">
+            📍 Distancia al cliente:{" "}
+            {distanciaMetros < 1000
               ? `${distanciaMetros.toFixed(1)} metros`
               : `${(distanciaMetros / 1000).toFixed(2)} km`}
           </Text>
-
           {distanciaMetros < 30 && (
-            <Text style={{ fontWeight: "bold", color: "#16a34a", marginTop: 5 }}>
-              ✅ dEstas cerca del cliente!
+            <Text className="text-emerald-600 font-semibold mt-1">
+              ✅ Estás cerca del cliente!
             </Text>
           )}
         </View>
       )}
+
+      {/* Mapa */}
       {ubicacionCliente && ubicacionTricimotero ? (
         <MapView
           ref={mapRef}
-          style={{ width: "100%", height: "100%" }}
-          region={region} // Establece la región controlada por el estado
-          onRegionChangeComplete={onRegionChange} // Actualiza la región cuando el usuario la cambia
+          className="w-full h-full"
+          region={region}
+          onRegionChangeComplete={onRegionChange}
         >
           <Marker coordinate={ubicacionCliente} title="Cliente" pinColor="blue">
-            <Image
-              source={icons.point}
-              style={{ width: 30, height: 30 }}
-            />
+            <Image source={icons.point} style={{ width: 30, height: 30 }} />
           </Marker>
           <Marker coordinate={ubicacionTricimotero} title="Tú" pinColor="green">
-            <Image
-              source={icons.marker}
-              style={{ width: 30, height: 30 }}
-            />
+            <Image source={icons.marker} style={{ width: 30, height: 30 }} />
           </Marker>
           {rutaCoords.length > 0 && (
-            <Polyline coordinates={rutaCoords} strokeColor="#4285F4" strokeWidth={4} />
+            <Polyline coordinates={rutaCoords} strokeColor="#22c55e" strokeWidth={4} />
           )}
         </MapView>
       ) : (
-        <ActivityIndicator size="large" color="#60a5fa" className="mt-10" />
+        <ActivityIndicator size="large" color="#22c55e" className="mt-10" />
       )}
     </View>
   );
